@@ -1,4 +1,4 @@
-/* base.css - 基础结构与通用组件（颜色全部变量化） */
+/* base.css - 基础结构与通用组件（已恢复 hero 区块完整代码，并保持产品列表卡片缩小优化） */
 
 body {
     font-family: "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -20,6 +20,46 @@ body {
         padding-left: 20px;
         padding-right: 20px;
     }
+}
+
+/* === 英雄区（Hero Section）完整恢复 === */
+.hero-section {
+    position: relative;
+    height: 80vh;
+    min-height: 600px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--text-inverse);
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--hero-overlay);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    padding: 0 20px;
+}
+
+.hero-content h1 {
+    font-size: clamp(3rem, 8vw, 4.5rem);
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 1.5rem;
+}
+
+.hero-content p {
+    font-size: 1.4rem;
+    margin-bottom: 2.5rem;
+    opacity: 0.95;
 }
 
 /* 导航栏基础结构 */
@@ -56,87 +96,110 @@ body {
     border-radius: 0.375rem;
 }
 
-/* 英雄区 */
-.hero-section {
-    position: relative;
-    height: 80vh;
-    min-height: 600px;
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* === 产品列表区块整体容器 === */
+.products-section {
+    background: var(--bg-secondary);
+    padding: 100px 0;
+}
+
+/* 产品列表标题 */
+.products-header {
     text-align: center;
-    color: var(--text-inverse);
+    margin-bottom: 80px;
 }
 
-.hero-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: var(--hero-overlay);
-}
-
-.hero-content h1 {
-    font-size: clamp(3rem, 8vw, 4.5rem);
+.products-header h2.section-title {
+    color: var(--text-primary);
+    font-size: 2.8rem;
     font-weight: 700;
-    letter-spacing: -1px;
-    margin-bottom: 1.5rem;
 }
 
-.hero-content p {
-    font-size: 1.4rem;
-    margin-bottom: 2.5rem;
-    opacity: 0.95;
-}
-
-/* 产品卡片与网格 */
+/* === 产品网格缩小为原 2/3 规模 === */
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 60px 40px;
-    margin-top: 60px;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 50px 40px;
+    margin-top: 40px;
 }
 
+/* === 产品卡片缩小为原 2/3（模仿详情页规格卡风格但紧凑） === */
 .product-card {
-    background: var(--card-bg);
-    border-radius: 0;
+    background: var(--card-bg) !important;
+    background-image: var(--gradient-card);
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: var(--shadow);
-    transition: all 0.4s ease;
-    margin-bottom: 40px;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.5s ease;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .product-card:hover {
-    transform: translateY(-10px);
-    box-shadow: var(--shadow-hover);
+    transform: translateY(-12px);
+    box-shadow: var(--shadow-hover-lg);
 }
 
+/* 图片区缩小 */
 .product-card-img {
-    height: 350px;
+    height: 320px;
     object-fit: cover;
-    transition: transform 0.6s ease;
+    width: 100%;
+    transition: transform 0.8s ease;
 }
 
 .product-card:hover .product-card-img {
-    transform: scale(1.05);
+    transform: scale(1.06);
 }
 
+/* 信息区缩小 */
 .product-card-body {
-    padding: 1.5rem 0;
-    text-align: center;
+    padding: 1.8rem 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
+/* 标题缩小 */
 .product-card-title {
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-size: 1.25rem;
+    font-weight: 700;
     color: var(--text-primary);
+    margin-bottom: 0.8rem;
 }
 
+/* 系列/分类缩小 */
 .product-card-brand {
     font-size: 0.95rem;
     color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    margin-bottom: 1.2rem;
+    font-weight: 500;
+}
+
+/* 规格预览区缩小 */
+.product-specs-preview {
+    margin-top: auto;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--divider);
+}
+
+.product-specs-preview ul {
+    font-size: 0.9rem;
+}
+
+.product-specs-preview li {
+    padding: 0.5rem 0;
+}
+
+.product-specs-preview li strong {
+    min-width: 100px;
+}
+
+/* hover 时标题强调 */
+.product-card:hover .product-card-title {
+    color: var(--primary);
 }
 
 /* 按钮 */
@@ -206,7 +269,7 @@ footer a:hover {
     transform: translateY(0);
 }
 
-/* 精选系列优化（高端展示） */
+/* 精选系列优化 */
 .featured-section .product-grid {
     gap: 60px 40px;
     margin-top: 80px;
@@ -216,5 +279,39 @@ footer a:hover {
     height: 450px;
 }
 
-/* 其他原有样式保留并变量化（略微精简） */
-img { max-width: 100%; height: auto; }
+/* 响应式优化 */
+@media (max-width: 1200px) {
+    .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 40px 30px;
+    }
+    
+    .product-card-img {
+        height: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .products-section {
+        padding: 80px 0;
+    }
+    
+    .product-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+    
+    .product-card-img {
+        height: 260px;
+    }
+    
+    .product-card-body {
+        padding: 1.5rem 1.2rem;
+    }
+}
+
+/* 通用 */
+img { 
+    max-width: 100%; 
+    height: auto; 
+}
