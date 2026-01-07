@@ -12,8 +12,6 @@ login_manager.login_message_category = 'warning'
 
 def create_app():
     app = Flask(__name__)
-    import time
-    app.config['CURRENT_TIME'] = int(time.time())  # 每次启动服务器都会变
     app.config['SECRET_KEY'] = 'your-very-secret-key-change-me'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

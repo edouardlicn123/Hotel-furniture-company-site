@@ -2,9 +2,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, login_user, logout_user, current_user
 from app.models import Product, Category, User, Settings
 from app import db
+from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
-from PIL import Image  # 需要 pip install pillow
+from PIL import Image
 
 admin_bp = Blueprint('admin', __name__, template_folder='templates/admin')
 
@@ -41,35 +42,47 @@ def settings():
         db.session.add(settings)
         db.session.commit()
 
+    # 自动读取 themes 目录下的所有主题文件
+    themes_dir = os.path.join(current_app.root_path, 'static', 'css', 'themes')
+    try:
+        theme_files = [
+            f[:-4] for f in os.listdir(themes_dir)
+            if f.endswith('.css') and f != 'variables.css'
+        ]
+        theme_files.sort()
+    except Exception:
+        theme_files = ['default']
+
     if request.method == 'POST':
         settings.company_name = request.form.get('company_name', '').strip()
-        settings.theme = request.form.get('theme', 'light')
-        
-        # 保存所有 SEO 字段
+
+        # 主题选择
+        selected_theme = request.form.get('theme')
+        if selected_theme in theme_files:
+            settings.theme = selected_theme
+        else:
+            settings.theme = 'default'
+
+        # SEO 字段
         settings.seo_home_title = request.form.get('seo_home_title', '')
         settings.seo_home_description = request.form.get('seo_home_description', '')
         settings.seo_home_keywords = request.form.get('seo_home_keywords', '')
-        
         settings.seo_products_title = request.form.get('seo_products_title', '')
         settings.seo_products_description = request.form.get('seo_products_description', '')
         settings.seo_products_keywords = request.form.get('seo_products_keywords', '')
-        
         settings.seo_about_title = request.form.get('seo_about_title', '')
         settings.seo_about_description = request.form.get('seo_about_description', '')
-        
         settings.seo_contact_title = request.form.get('seo_contact_title', '')
         settings.seo_contact_description = request.form.get('seo_contact_description', '')
-        
-        # 处理 Logo 上传
+
+        # Logo 上传（保持原有逻辑）
         logo_file = request.files.get('logo')
         if logo_file and logo_file.filename != '':
-            upload_folder = os.path.join('app', 'static', 'uploads', 'logo')
+            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'logo')
             os.makedirs(upload_folder, exist_ok=True)
 
-            # 临时保存用于检查尺寸
-            filename = logo_file.filename.rsplit('.', 1)[-1].lower() if '.' in logo_file.filename else 'png'
-            temp_filename = f'temp_company_logo.{filename}'
-            temp_path = os.path.join(upload_folder, temp_filename)
+            ext = logo_file.filename.rsplit('.', 1)[-1].lower() if '.' in logo_file.filename else 'png'
+            temp_path = os.path.join(upload_folder, f'temp_company_logo.{ext}')
             logo_file.save(temp_path)
 
             try:
@@ -78,7 +91,6 @@ def settings():
                         os.remove(temp_path)
                         flash('Logo 图片尺寸超过最大限制 600×300 像素，请重新上传！', 'danger')
                     else:
-                        # 尺寸合法，统一保存为 company_logo（覆盖旧文件）
                         final_path = os.path.join(upload_folder, 'company_logo')
                         if os.path.exists(final_path):
                             os.remove(final_path)
@@ -90,16 +102,13 @@ def settings():
                     os.remove(temp_path)
                 flash(f'图片处理失败：{str(e)}', 'danger')
 
-        # 可选：如果以后想加“移除 Logo”按钮，可以在这里处理
-        # elif request.form.get('remove_logo'):
-        #     ...
-
         db.session.commit()
-        flash('所有设置保存成功！', 'success')
+        flash('所有设置保存成功！主题已更新。', 'success')
         return redirect(url_for('admin.settings'))
 
-    return render_template('admin/settings.html', settings=settings)
+    return render_template('admin/settings.html', settings=settings, theme_files=theme_files)
 
+# 以下产品管理路由保持不变（直接复制原文件对应部分即可）
 @admin_bp.route('/products')
 @login_required
 def product_list():
@@ -125,12 +134,11 @@ def product_add():
         applicable_space = request.form.get('applicable_space')
         featured_series = request.form.get('featured_series')
         
-        # 多图上传处理（最多10张）
-        upload_folder = os.path.join('app', 'static', 'uploads', 'products')
+        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'products')
         os.makedirs(upload_folder, exist_ok=True)
         
         photos_list = []
-        image_files = request.files.getlist('photos')  # name="photos"
+        image_files = request.files.getlist('photos')
         
         for file in image_files[:10]:
             if file and file.filename != '':

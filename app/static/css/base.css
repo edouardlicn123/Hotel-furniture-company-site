@@ -374,7 +374,7 @@ footer a:hover {
 }
 
 .featured-section .product-card-img {
-    height: 250px;
+    height: 260px;
 }
 
 /* 响应式优化 */
@@ -413,3 +413,5 @@ img {
     max-width: 100%; 
     height: auto; 
 }
+
+
