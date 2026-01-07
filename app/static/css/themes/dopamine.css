@@ -1,0 +1,136 @@
+/* themes/dopamine.css - 多巴胺活力配色主题（鲜艳、高饱和、快乐爆棚） - 已降低主菜单透明度至 80% 不透明 */
+
+:root {
+    /* 主配色 - 多巴胺经典：高饱和彩虹活力色，激发快乐感 */
+    --primary: #FF2E63;              /* 亮粉红（主按钮、链接、核心强调） */
+    --primary-dark: #E91E63;         /* 深粉红（hover、渐变深端） */
+    --primary-light: #FFEBF0;        /* 极浅粉背景（整体活力底调） */
+    --accent: #FF9500;               /* 活力橙黄（次强调、图标、点缀） */
+
+    /* 文字 - 清晰活力 */
+    --text-primary: #222222;
+    --text-secondary: #555555;
+    --text-inverse: #FFFFFF;
+
+    /* 背景 - 明亮快乐氛围 */
+    --bg-main: #FFFFFF;
+    --bg-secondary: #FFF5F8;
+    --card-bg: #FFFFFF;
+    /* 关键调整：主菜单背景不透明度提升至 80%（opacity 0.8 → rgba 颜色直接控制） */
+    --navbar-bg: rgba(255, 255, 255, 0.8); /* 默认白底 80% 不透明，滚动前轻透可见背景 */
+    --footer-bg: #1A1A1A;
+    --hero-overlay: linear-gradient(135deg, rgba(255, 46, 99, 0.4), rgba(255, 149, 0, 0.3));
+
+    /* 边框与分割 - 轻快不沉重 */
+    --border: #FFD0D0;
+    --divider: #FFE0E0;
+
+    /* 阴影 - 活力跳跃感 */
+    --shadow: 0 12px 30px rgba(255, 46, 99, 0.15);
+    --shadow-md: 0 6px 15px rgba(255, 149, 0, 0.12);
+    --shadow-hover: 0 25px 50px rgba(255, 46, 99, 0.25);
+
+    /* 悬停与交互 - 爆棚快乐过渡 */
+    --hover-bg: rgba(255, 46, 99, 0.2);
+    --hover-text: #FF2E63;
+
+    /* 状态色 - 多巴胺彩虹延伸 */
+    --success: #00D4A1;
+    --warning: #FF9500;
+    --error: #FF3B30;
+
+    /* 渐变 - 多巴胺核心：彩虹活力渐变 */
+    --gradient-primary: linear-gradient(135deg, #FF2E63, #FF9500, #FFEB3B);
+    --gradient-card: linear-gradient(to bottom, #FFFFFF, #FFF0F5);
+    --gradient-navbar: linear-gradient(to right, rgba(255, 46, 99, 0.25), rgba(255, 149, 0, 0.2)); /* 渐变层也相应加深 */
+}
+
+/* 主题特有强化 - 主菜单透明度调整 */
+.navbar {
+    background: var(--navbar-bg) !important; /* 白底 80% 不透明 */
+    background-image: var(--gradient-navbar) !important; /* 彩虹渐变层加深，活力感更实 */
+    border-bottom: 3px solid var(--primary-light);
+    box-shadow: var(--shadow-md);
+    transition: all 0.4s ease;
+    backdrop-filter: blur(10px); /* 新增：磨砂玻璃效果，提升 80% 不透明时的质感与现代感 */
+}
+
+.navbar.scrolled {
+    background: rgba(255, 255, 255, 0.95) !important; /* 滚动后接近完全不透明，更稳重 */
+    background-image: var(--gradient-primary) !important;
+    box-shadow: var(--shadow-hover);
+    backdrop-filter: blur(12px);
+}
+
+/* 其余保持不变（保持之前优化） */
+.navbar-brand {
+    color: var(--primary) !important;
+    font-weight: 900;
+}
+
+.nav-link {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--hover-text) !important;
+    background-color: var(--hover-bg) !important;
+    border-radius: 30px;
+    transform: scale(1.1);
+}
+
+.card, .product-card {
+    background-image: var(--gradient-card);
+    border-radius: 20px;
+    border: 1px solid var(--primary-light);
+    overflow: hidden;
+}
+
+.btn-primary {
+    border-radius: 50px;
+    font-weight: 700;
+    padding: 1rem 3rem;
+    background-image: var(--gradient-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-hover);
+}
+
+.hero-section {
+    color: var(--text-inverse) !important;
+}
+
+.hero-overlay {
+    background: var(--hero-overlay) !important;
+}
+
+.hero-content h1,
+.hero-content .display-4 {
+    color: #FFFFFF !important;
+    text-shadow:
+        0 0 15px rgba(255, 46, 99, 0.6),
+        0 4px 12px rgba(0, 0, 0, 0.7);
+    font-weight: 900;
+    letter-spacing: -1px;
+}
+
+.hero-content p,
+.hero-content .lead {
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.product-card:hover {
+    transform: translateY(-20px) scale(1.03);
+    box-shadow: var(--shadow-hover);
+}
+
+footer {
+    background: var(--footer-bg);
+    color: #DDDDDD;
+}

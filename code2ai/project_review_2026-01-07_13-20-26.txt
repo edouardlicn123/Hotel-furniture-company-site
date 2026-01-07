@@ -1,0 +1,2426 @@
+# 项目文件汇总（用于 AI 审查）
+# 项目路径：/home/edo/Hotel-furniture-company-site
+# 生成时间：2026-01-07T13:20:26.249056
+# 共包含 37 个文件
+
+================================================================================
+
+### 文件: README.md
+# 大小: 236 字节
+```
+# 用于酒店家具公司网站的模板
+用于酒店家具公司的官方网站的模板，python+flask框架
+
+带首页，产品列表，精选列表（未实现），公司介绍，联系方式。
+
+可更换主题和SEO关键字。
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/__init__.py
+# 大小: 1276 字节
+```
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_login import LoginManager
+
+db = SQLAlchemy()
+migrate = Migrate()
+login_manager = LoginManager()
+login_manager.login_view = 'admin.login'  # 未登录跳转到登录页
+login_manager.login_message = '请先登录后台管理系统'
+login_manager.login_message_category = 'warning'
+
+def create_app():
+    app = Flask(__name__)
+    app.config['SECRET_KEY'] = 'your-very-secret-key-change-me'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    db.init_app(app)
+    migrate.init_app(app, db)
+    login_manager.init_app(app)
+
+    from app.models import User
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    # 注册蓝图
+    from app.routes.main import main_bp
+    from app.routes.products import products_bp
+    from app.routes.featured import featured_bp
+    from app.routes.admin import admin_bp
+
+    app.register_blueprint(main_bp)
+    app.register_blueprint(products_bp, url_prefix='/products')
+    app.register_blueprint(featured_bp, url_prefix='/featured')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+
+    return app
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/models.py
+# 大小: 3650 字节
+```
+from app import db
+from datetime import datetime
+from flask_login import UserMixin
+
+# 用户表（后台登录用）
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)  # 存储哈希密码
+
+# 网站设置表（单行记录，包含 SEO 配置）
+class Settings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    company_name = db.Column(db.String(100), default='XX Hotel Furniture Manufacturer')
+    theme = db.Column(db.String(20), default='light')
+    logo = db.Column(db.String(200))  # 新增：公司 Logo 文件名（固定为 company_logo）
+
+    # Homepage SEO
+    seo_home_title = db.Column(db.String(200), default='Home - Premium Hotel Furniture | {company_name}')
+    seo_home_description = db.Column(db.Text, default='Professional hotel furniture manufacturer specializing in luxury beds, sofas, wardrobes and custom solutions for 5-star hotels worldwide.')
+    seo_home_keywords = db.Column(db.Text, default='hotel furniture, luxury hotel beds, hotel sofas, custom hospitality furniture, hotel room furniture')
+
+    # Products Page SEO
+    seo_products_title = db.Column(db.String(200), default='Hotel Furniture Products | Beds, Sofas, Wardrobes - {company_name}')
+    seo_products_description = db.Column(db.Text, default='Explore our complete collection of premium hotel furniture including beds, nightstands, sofas, wardrobes and custom case goods for luxury hospitality projects.')
+    seo_products_keywords = db.Column(db.Text, default='hotel furniture products, hotel beds, hotel sofas, hotel wardrobes, luxury hotel furniture collection')
+
+    # About Page SEO
+    seo_about_title = db.Column(db.String(200), default='About Us - {company_name} | Leading Hotel Furniture Manufacturer')
+    seo_about_description = db.Column(db.Text, default='Learn about {company_name}, a professional hotel furniture manufacturer with years of experience in custom hospitality furniture design and production.')
+
+    # Contact Page SEO
+    seo_contact_title = db.Column(db.String(200), default='Contact Us - {company_name} | Hotel Furniture Inquiry')
+    seo_contact_description = db.Column(db.Text, default='Contact {company_name} for custom hotel furniture solutions, quotes, and partnership opportunities.')
+
+# 主分类（酒店家具英文分类）
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    
+    # 主图（兼容旧数据）
+    image = db.Column(db.String(200))
+    
+    # 多图（逗号分隔，最多10张）
+    photos = db.Column(db.String(1000))
+    
+    # 规格字段
+    length = db.Column(db.Integer)  # Length (mm)
+    width = db.Column(db.Integer)   # Width (mm)
+    height = db.Column(db.Integer)  # Height (mm)
+    seat_height = db.Column(db.Integer)  # Seat Height (mm)
+    
+    # 材质
+    base_material = db.Column(db.String(100))
+    surface_material = db.Column(db.String(100))
+    
+    # 精选系列（逗号分隔字符串）
+    featured_series = db.Column(db.String(200))
+    
+    # 适用空间（逗号分隔字符串）
+    applicable_space = db.Column(db.String(200))
+    
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    category = db.relationship('Category', backref='products')
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/routes/__init__.py
+# 大小: 29 字节
+```
+from flask import Blueprint 
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/routes/admin.py
+# 大小: 8038 字节
+```
+from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask_login import login_required, login_user, logout_user, current_user
+from app.models import Product, Category, User, Settings
+from app import db
+from werkzeug.security import generate_password_hash, check_password_hash
+import os
+from PIL import Image  # 需要 pip install pillow
+
+admin_bp = Blueprint('admin', __name__, template_folder='templates/admin')
+
+@admin_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            return redirect(url_for('admin.index'))
+        flash('用户名或密码错误', 'danger')
+    return render_template('admin/login.html')
+
+@admin_bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('已退出登录', 'info')
+    return redirect(url_for('admin.login'))
+
+@admin_bp.route('/')
+@login_required
+def index():
+    return render_template('admin/index.html')
+
+@admin_bp.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    settings = Settings.query.first()
+    if not settings:
+        settings = Settings()
+        db.session.add(settings)
+        db.session.commit()
+
+    if request.method == 'POST':
+        settings.company_name = request.form.get('company_name', '').strip()
+        settings.theme = request.form.get('theme', 'light')
+        
+        # 保存所有 SEO 字段
+        settings.seo_home_title = request.form.get('seo_home_title', '')
+        settings.seo_home_description = request.form.get('seo_home_description', '')
+        settings.seo_home_keywords = request.form.get('seo_home_keywords', '')
+        
+        settings.seo_products_title = request.form.get('seo_products_title', '')
+        settings.seo_products_description = request.form.get('seo_products_description', '')
+        settings.seo_products_keywords = request.form.get('seo_products_keywords', '')
+        
+        settings.seo_about_title = request.form.get('seo_about_title', '')
+        settings.seo_about_description = request.form.get('seo_about_description', '')
+        
+        settings.seo_contact_title = request.form.get('seo_contact_title', '')
+        settings.seo_contact_description = request.form.get('seo_contact_description', '')
+        
+        # 处理 Logo 上传
+        logo_file = request.files.get('logo')
+        if logo_file and logo_file.filename != '':
+            upload_folder = os.path.join('app', 'static', 'uploads', 'logo')
+            os.makedirs(upload_folder, exist_ok=True)
+
+            # 临时保存用于检查尺寸
+            filename = logo_file.filename.rsplit('.', 1)[-1].lower() if '.' in logo_file.filename else 'png'
+            temp_filename = f'temp_company_logo.{filename}'
+            temp_path = os.path.join(upload_folder, temp_filename)
+            logo_file.save(temp_path)
+
+            try:
+                with Image.open(temp_path) as img:
+                    if img.width > 600 or img.height > 300:
+                        os.remove(temp_path)
+                        flash('Logo 图片尺寸超过最大限制 600×300 像素，请重新上传！', 'danger')
+                    else:
+                        # 尺寸合法，统一保存为 company_logo（覆盖旧文件）
+                        final_path = os.path.join(upload_folder, 'company_logo')
+                        if os.path.exists(final_path):
+                            os.remove(final_path)
+                        os.rename(temp_path, final_path)
+                        settings.logo = 'company_logo'
+                        flash('Logo 更新成功！', 'success')
+            except Exception as e:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                flash(f'图片处理失败：{str(e)}', 'danger')
+
+        # 可选：如果以后想加“移除 Logo”按钮，可以在这里处理
+        # elif request.form.get('remove_logo'):
+        #     ...
+
+        db.session.commit()
+        flash('所有设置保存成功！', 'success')
+        return redirect(url_for('admin.settings'))
+
+    return render_template('admin/settings.html', settings=settings)
+
+@admin_bp.route('/products')
+@login_required
+def product_list():
+    products = Product.query.all()
+    return render_template('admin/product_list.html', products=products)
+
+@admin_bp.route('/products/add', methods=['GET', 'POST'])
+@login_required
+def product_add():
+    categories = Category.query.all()
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        description = request.form.get('description')
+        category_id = request.form.get('category_id')
+        
+        length = request.form.get('length')
+        width = request.form.get('width')
+        height = request.form.get('height')
+        seat_height = request.form.get('seat_height')
+        base_material = request.form.get('base_material')
+        surface_material = request.form.get('surface_material')
+        applicable_space = request.form.get('applicable_space')
+        featured_series = request.form.get('featured_series')
+        
+        # 多图上传处理（最多10张）
+        upload_folder = os.path.join('app', 'static', 'uploads', 'products')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        photos_list = []
+        image_files = request.files.getlist('photos')  # name="photos"
+        
+        for file in image_files[:10]:
+            if file and file.filename != '':
+                filename = file.filename
+                file.save(os.path.join(upload_folder, filename))
+                photos_list.append(filename)
+        
+        photos_str = ','.join(photos_list) if photos_list else None
+        main_image = photos_list[0] if photos_list else None
+        
+        new_product = Product(
+            name=name,
+            description=description,
+            image=main_image,
+            photos=photos_str,
+            length=int(length) if length else None,
+            width=int(width) if width else None,
+            height=int(height) if height else None,
+            seat_height=int(seat_height) if seat_height else None,
+            base_material=base_material,
+            surface_material=surface_material,
+            applicable_space=applicable_space,
+            featured_series=featured_series,
+            category_id=category_id or None
+        )
+        db.session.add(new_product)
+        db.session.commit()
+        flash(f'产品添加成功！已上传 {len(photos_list)} 张图片', 'success')
+        return redirect(url_for('admin.product_list'))
+    
+    return render_template('admin/product_add.html', categories=categories)
+
+@admin_bp.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not check_password_hash(current_user.password, old_password):
+            flash('旧密码不正确', 'danger')
+            return redirect(url_for('admin.change_password'))
+
+        if new_password != confirm_password:
+            flash('两次输入的新密码不一致', 'danger')
+            return redirect(url_for('admin.change_password'))
+
+        if len(new_password) < 6:
+            flash('新密码至少需要6位字符', 'danger')
+            return redirect(url_for('admin.change_password'))
+
+        current_user.password = generate_password_hash(new_password)
+        db.session.commit()
+        flash('密码修改成功！请重新登录', 'success')
+        logout_user()
+        return redirect(url_for('admin.login'))
+
+    return render_template('admin/change_password.html')
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/routes/featured.py
+# 大小: 720 字节
+```
+from flask import Blueprint, render_template
+from app.models import Product
+
+featured_bp = Blueprint('featured', __name__)
+
+@featured_bp.route('/')
+def featured_index():
+    # 显示所有产品（或后续过滤有 featured_series 的产品）
+    products = Product.query.all()
+    return render_template('featured/index.html', products=products)
+
+# 可添加具体系列页面（基于字符串匹配）
+@featured_bp.route('/<series_name>')
+def series_detail(series_name):
+    # 过滤包含该系列名的产品（逗号分隔）
+    products = Product.query.filter(Product.featured_series.like(f'%{series_name}%')).all()
+    return render_template('featured/series.html', products=products, series_name=series_name)
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/routes/main.py
+# 大小: 4099 字节
+```
+from flask import Blueprint, render_template, request, url_for
+from app.models import Settings
+
+main_bp = Blueprint('main', __name__)
+
+# 全局注入公司名称 + 当前页面 SEO 配置 + 公司 Logo URL
+@main_bp.context_processor
+def inject_seo_data():
+    settings = Settings.query.first()
+    if not settings:
+        # 默认值（防止数据库为空）
+        company_name = 'XX Hotel Furniture Manufacturer'
+        current_title = 'Home - Premium Hotel Furniture | XX Hotel Furniture Manufacturer'
+        current_description = 'Professional hotel furniture manufacturer specializing in luxury beds, sofas, wardrobes and custom solutions for 5-star hotels worldwide.'
+        current_keywords = 'hotel furniture, luxury hotel beds, hotel sofas, custom hospitality furniture, hotel room furniture'
+        company_logo_url = None
+    else:
+        company_name = settings.company_name
+        
+        # 根据当前路由选择 SEO 配置
+        endpoint = request.endpoint
+        
+        if endpoint == 'main.index':
+            current_title = (settings.seo_home_title or 'Home - Premium Hotel Furniture | {company_name}').format(company_name=company_name)
+            current_description = settings.seo_home_description or 'Professional hotel furniture manufacturer specializing in luxury beds, sofas, wardrobes and custom solutions for 5-star hotels worldwide.'
+            current_keywords = settings.seo_home_keywords or 'hotel furniture, luxury hotel beds, hotel sofas, custom hospitality furniture, hotel room furniture'
+        elif endpoint == 'products.products_list':
+            current_title = (settings.seo_products_title or 'Products | {company_name}').format(company_name=company_name)
+            current_description = settings.seo_products_description or 'Explore our complete collection of premium hotel furniture including beds, nightstands, sofas, wardrobes and custom case goods for luxury hospitality projects.'
+            current_keywords = settings.seo_products_keywords or 'hotel furniture products, hotel beds, hotel sofas, hotel wardrobes, luxury hotel furniture collection'
+        elif endpoint == 'main.about':
+            current_title = (settings.seo_about_title or 'About Us - {company_name} | Leading Hotel Furniture Manufacturer').format(company_name=company_name)
+            current_description = settings.seo_about_description or 'Learn about {company_name}, a professional hotel furniture manufacturer with years of experience in custom hospitality furniture design and production.'
+            current_keywords = 'about hotel furniture manufacturer, hospitality furniture company, custom hotel furniture supplier'
+        elif endpoint == 'main.contact':
+            current_title = (settings.seo_contact_title or 'Contact Us - {company_name} | Hotel Furniture Inquiry').format(company_name=company_name)
+            current_description = settings.seo_contact_description or 'Contact {company_name} for custom hotel furniture solutions, quotes, and partnership opportunities.'
+            current_keywords = 'contact hotel furniture manufacturer, hotel furniture quote, hospitality furniture supplier'
+        else:
+            current_title = f'{company_name} | Professional Hotel Furniture Manufacturer'
+            current_description = 'Premium hotel furniture solutions for luxury hospitality.'
+            current_keywords = 'hotel furniture, custom hotel furniture'
+
+        # Logo URL：如果数据库中有 logo 字段且值为 'company_logo'，则提供 URL
+        company_logo_url = url_for('static', filename='uploads/logo/company_logo') if settings.logo else None
+
+    return dict(
+        company_name=company_name,
+        page_title=current_title,
+        page_description=current_description,
+        page_keywords=current_keywords,
+        company_logo_url=company_logo_url
+    )
+
+@main_bp.route('/')
+def index():
+    return render_template('index.html')
+
+@main_bp.route('/about')
+def about():
+    return render_template('about.html')
+
+@main_bp.route('/contact')
+def contact():
+    return render_template('contact.html')
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/routes/products.py
+# 大小: 544 字节
+```
+from flask import Blueprint, render_template
+from app.models import Product, Category
+
+products_bp = Blueprint('products', __name__)
+
+@products_bp.route('/')
+def list_products():
+    categories = Category.query.all()
+    products = Product.query.all()
+    return render_template('products/list.html', categories=categories, products=products)
+
+@products_bp.route('/<int:product_id>')
+def product_detail(product_id):
+    product = Product.query.get_or_404(product_id)
+    return render_template('products/product_detail.html', product=product)  
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/static/css/custom.css
+# 大小: 4861 字节
+```
+body {
+    font-family: "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background-color: #ffffff;
+    color: #333333;
+    line-height: 1.8;
+    font-size: 16px;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1320px;
+    padding-left: 40px;
+    padding-right: 40px;
+}
+
+@media (max-width: 1200px) {
+    .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
+
+.navbar {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #eeeeee;
+    padding: 1rem 0;
+    transition: all 0.3s ease;
+}
+
+.navbar.scrolled {
+    padding: 0.8rem 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.navbar-brand {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #000000 !important;
+    letter-spacing: -0.5px;
+}
+
+.nav-link {
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: #333333 !important;
+    padding: 0.5rem 1rem !important;
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #000000 !important;
+}
+
+.hero-section {
+    position: relative;
+    height: 80vh;
+    min-height: 600px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    padding: 0 20px;
+}
+
+.hero-content h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 1.5rem;
+}
+
+.hero-content p {
+    font-size: 1.4rem;
+    margin-bottom: 2.5rem;
+    opacity: 0.95;
+}
+
+.product-card {
+    background: white;
+    border-radius: 0;
+    overflow: hidden;
+    box-shadow: none;
+    transition: all 0.4s ease;
+    margin-bottom: 40px;
+}
+
+.product-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.product-card-img {
+    height: 350px;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+}
+
+.product-card:hover .product-card-img {
+    transform: scale(1.05);
+}
+
+.product-card-body {
+    padding: 1.5rem 0;
+}
+
+.product-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.product-card-brand {
+    font-size: 0.95rem;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 40px 30px;
+    margin-top: 60px;
+}
+
+.btn-primary {
+    background-color: #000000;
+    border-color: #000000;
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+    border-radius: 0;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #333333;
+    border-color: #333333;
+}
+
+.btn-outline-dark {
+    border-color: #000000;
+    color: #000000;
+    border-radius: 0;
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+}
+
+.btn-outline-dark:hover {
+    background-color: #000000;
+    color: white;
+}
+
+h2.section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 3rem;
+    text-align: center;
+    letter-spacing: -0.5px;
+}
+
+footer {
+    background-color: #111111 !important;
+    color: #888888;
+    padding: 80px 0 40px;
+    font-size: 0.95rem;
+}
+
+footer h5 {
+    color: white;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+footer a {
+    color: #888888;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+footer a:hover {
+    color: white;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+.fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s ease;
+}
+
+.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Featured Series 卡片优化 - 高端家具展示风格 */
+.featured-section .product-grid {
+    gap: 60px 40px; /* 更大间距，呼吸感强 */
+    margin-top: 80px;
+}
+
+.featured-section .product-card {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+}
+
+.featured-section .product-card:hover {
+    transform: translateY(-20px);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.12);
+}
+
+.featured-section .product-card-img {
+    height: 450px; /* 更高图片，突出家具细节 */
+    border-radius: 0;
+    transition: transform 0.8s ease;
+}
+
+.featured-section .product-card:hover .product-card-img {
+    transform: scale(1.08);
+}
+
+.featured-section .product-card-body {
+    padding: 2rem 0 0;
+    text-align: center;
+}
+
+.featured-section .product-card-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    color: #000;
+}
+
+.featured-section .product-card-brand {
+    font-size: 1rem;
+    color: #666;
+    text-transform: none;
+    letter-spacing: 1px;
+}
+
+/* 标题优化 */
+.featured-section .section-title {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 4rem;
+}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/static/js/custom.js
+# 大小: 0 字节
+```
+
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/about.html
+# 大小: 1117 字节
+```
+{% extends "base.html" %}
+
+{% block hero_section %}
+<section class="hero-section" style="background-image: url('{{ url_for('static', filename='uploads/about_hero.jpg') }}'); height: 22.5vh; min-height: 200px;">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <h1 class="display-5 fw-bold">About Us</h1>
+        <p class="lead mb-0">Dedicated to Excellence in Hotel Furniture Manufacturing</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <p class="lead text-center mb-5">{{ company_name }} was established in 2015, specializing in high-end hotel furniture design and manufacturing. Our product range includes beds, wardrobes, desks, sofas, and more.</p>
+            <h3 class="section-title">Our Strengths</h3>
+            <p>With a factory covering 20,000㎡ and advanced production equipment, we achieve annual output value exceeding 100 million RMB, serving tens of thousands of hospitality clients worldwide.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/admin/base.html
+# 大小: 1095 字节
+```
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- 浏览器标题 -->
+    <title>{% block title %}后台管理 - XX生产商{% endblock %}</title>
+    
+    <!-- 样式（同前端） -->
+    {% block extra_styles %}
+        {% include 'partials/extra_styles.html' %}
+    {% endblock %}
+</head>
+<body>
+    <!-- 后台专用菜单模板 -->
+    {% include 'partials/admin_navbar.html' %}
+
+    <!-- 英雄区（可选） -->
+    {% block hero_section %}{% endblock %}
+
+    <!-- 主体内容 -->
+    <main class="container my-5">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 页脚（同前端） -->
+    {% block footer %}
+        {% include 'partials/footer.html' %}
+    {% endblock %}
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js" defer></script>
+    
+    <!-- 额外脚本 -->
+    {% block extra_scripts %}
+        {% include 'partials/extra_scripts.html' %}
+    {% endblock %}
+</body>
+</html>
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/admin/change_password.html
+# 大小: 2066 字节
+```
+{% extends "admin/base.html" %}
+
+{% block title %}修改密码{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <h2 class="section-title mb-4">修改密码</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mb-4">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card p-4">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="old_password" class="form-label fw-bold">当前密码</label>
+                    <input type="password" class="form-control form-control-lg" id="old_password" name="old_password" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="new_password" class="form-label fw-bold">新密码</label>
+                    <input type="password" class="form-control form-control-lg" id="new_password" name="new_password" required minlength="6">
+                    <div class="form-text">密码至少6位字符</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="confirm_password" class="form-label fw-bold">确认新密码</label>
+                    <input type="password" class="form-control form-control-lg" id="confirm_password" name="confirm_password" required minlength="6">
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">确认修改</button>
+                    <a href="/admin" class="btn btn-outline-secondary btn-lg px-5 ms-3">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/admin/index.html
+# 大小: 1642 字节
+```
+{% extends "admin/base.html" %}
+
+{% block title %}后台首页{% endblock %}
+
+{% block hero_section %}
+<section class="hero-section" style="background-image: url('{{ url_for('static', filename='uploads/admin_hero.jpg') }}'); height: 20vh; min-height: 160px;">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <h1 class="h3 fw-bold mb-2">欢迎进入后台管理</h1>
+        <p class="mb-0 opacity-90">高效管理网站内容与设置</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row text-center g-4">
+        <div class="col-md-6">
+            <div class="product-card h-100 p-4">
+                <div class="product-card-body text-center">
+                    <i class="fas fa-cogs fa-3x text-primary mb-3"></i>
+                    <h3 class="product-card-title">网站设置</h3>
+                    <p class="text-muted">修改公司名称、主题等全局配置</p>
+                    <a href="/admin/settings" class="btn btn-primary">进入设置</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="product-card h-100 p-4">
+                <div class="product-card-body text-center">
+                    <i class="fas fa-boxes fa-3x text-success mb-3"></i>
+                    <h3 class="product-card-title">产品管理</h3>
+                    <p class="text-muted">添加、编辑、删除产品信息</p>
+                    <a href="/admin/products" class="btn btn-success">进入管理</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/admin/login.html
+# 大小: 1738 字节
+```
+{% extends "admin/base.html" %}
+
+{% block title %}后台登录{% endblock %}
+
+{% block hero_section %}{% endblock %}  <!-- 登录页不显示英雄区 -->
+
+{% block content %}
+<div class="row justify-content-center align-items-center min-vh-100">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h3 class="text-center mb-4">后台登录</h3>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">用户名</label>
+                        <input type="text" class="form-control" name="username" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">密码</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">登录</button>
+                </form>
+                <p class="text-center mt-3 text-muted small">默认账号：admin / admin123</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/admin/product_add.html
+# 大小: 6243 字节
+```
+{% extends "admin/base.html" %}
+
+{% block title %}添加产品{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <h2 class="section-title mb-4">添加新产品</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mb-4">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card p-4">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-bold">产品名称（Product Name）</label>
+                            <input type="text" class="form-control form-control-lg" id="name" name="name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label fw-bold">产品描述（Description）</label>
+                            <textarea class="form-control" id="description" name="description" rows="5" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="category_id" class="form-label fw-bold">产品分类（Category）</label>
+                            <select class="form-select form-select-lg" id="category_id" name="category_id" required>
+                                <option value="">请选择分类</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label for="length" class="form-label">长 Length (mm)</label>
+                                <input type="number" class="form-control" id="length" name="length">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="width" class="form-label">宽 Width (mm)</label>
+                                <input type="number" class="form-control" id="width" name="width">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="height" class="form-label">高 Height (mm)</label>
+                                <input type="number" class="form-control" id="height" name="height">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="seat_height" class="form-label">座高 Seat Height (mm)</label>
+                                <input type="number" class="form-control" id="seat_height" name="seat_height" placeholder="仅椅子/沙发">
+                                <div class="form-text">可选</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="base_material" class="form-label fw-bold">基材（Base Material）</label>
+                            <input type="text" class="form-control" id="base_material" name="base_material" placeholder="例如：Solid Wood, Metal">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="surface_material" class="form-label fw-bold">覆面（Surface Material）</label>
+                            <input type="text" class="form-control" id="surface_material" name="surface_material" placeholder="例如：Fabric, Leather, Lacquer">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="applicable_space" class="form-label fw-bold">适用空间（Applicable Space）</label>
+                            <input type="text" class="form-control" id="applicable_space" name="applicable_space"
+                                   placeholder="例如：Guest Room, Lobby, Restaurant">
+                            <div class="form-text">多个空间用英文逗号分隔</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="featured_series" class="form-label fw-bold">精选系列（Featured Series）</label>
+                            <input type="text" class="form-control" id="featured_series" name="featured_series"
+                                   placeholder="例如：Modern Hotel Series, Luxury Classic Series">
+                            <div class="form-text">多个系列用英文逗号分隔</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mb-4">
+                            <label for="photos" class="form-label fw-bold">产品图片（最多10张）</label>
+                            <input class="form-control form-control-lg" type="file" id="photos" name="photos" accept="image/*" multiple>
+                            <div class="form-text">
+                                支持同时选择多张图片（Ctrl+点击或拖拽）。<br>
+                                第一张将作为主图显示，其余用于详情页画廊。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">保存产品</button>
+                    <a href="{{ url_for('admin.product_list') }}" class="btn btn-outline-secondary btn-lg px-5 ms-3">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/admin/product_list.html
+# 大小: 2564 字节
+```
+{% extends "admin/base.html" %}
+
+{% block title %}产品管理{% endblock %}
+
+{% block content %}
+<h2 class="section-title">产品管理</h2>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="text-muted">共 {{ products|length }} 个产品</p>
+    <a href="{{ url_for('admin.product_add') }}" class="btn btn-primary btn-lg">
+        <i class="fas fa-plus me-2"></i>添加产品
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<table class="table table-striped table-hover align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>图片</th>
+            <th>产品名称</th>
+            <th>分类</th>
+            <th>精选系列</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in products %}
+        <tr>
+            <td>
+                {% if product.image %}
+                    <img src="{{ url_for('static', filename='uploads/products/' + product.image) }}" 
+                         alt="{{ product.name }}" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">
+                {% else %}
+                    <div class="bg-light border" style="width:80px; height:60px; border-radius:6px;"></div>
+                {% endif %}
+            </td>
+            <td><strong>{{ product.name }}</strong></td>
+            <td>{{ product.category.name if product.category else '无分类' }}</td>
+            <td>
+                {% for series in product.featured_series %}
+                    <span class="badge bg-secondary me-1">{{ series.name }}</span>
+                {% endfor %}
+                {% if not product.featured_series %}
+                    <span class="text-muted">未关联</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="#" class="btn btn-sm btn-outline-primary">编辑</a>
+                <a href="#" class="btn btn-sm btn-outline-danger">删除</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" class="text-center py-5 text-muted">暂无产品，请点击右上角“添加产品”</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/admin/settings.html
+# 大小: 8219 字节
+```
+{% extends "admin/base.html" %}
+
+{% block title %}网站设置{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <h2 class="section-title mb-4">网站与SEO设置</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mb-4">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data">
+            <!-- 基本信息 -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">基本信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="company_name" class="form-label fw-bold">公司名称</label>
+                        <input type="text" class="form-control form-control-lg" id="company_name" name="company_name"
+                               value="{{ settings.company_name }}" required>
+                        <div class="form-text">将显示在导航栏、页脚及SEO标题中</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="logo" class="form-label fw-bold">公司 Logo（可选）</label>
+                        <input class="form-control form-control-lg" type="file" id="logo" name="logo" accept="image/*">
+                        <div class="form-text">
+                            推荐透明 PNG，最大尺寸 600×300 像素。<br>
+                            上传后将替换导航栏和页脚的公司名称文字。
+                        </div>
+                        {% if settings.logo %}
+                        <div class="mt-3">
+                            <p class="mb-2"><strong>当前 Logo：</strong></p>
+                            <img src="{{ url_for('static', filename='uploads/logo/company_logo') }}?v={{ range(1,1000000)|random }}" 
+                                 alt="Current Logo" class="img-thumbnail" style="max-height: 100px;">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="theme" class="form-label fw-bold">网站主题</label>
+                        <select class="form-select form-select-lg" id="theme" name="theme">
+                            <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>浅色主题</option>
+                            <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>深色主题</option>
+                            <option value="blue" {% if settings.theme == 'blue' %}selected{% endif %}>蓝色主题</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 首页SEO -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">首页SEO设置</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="seo_home_title" class="form-label">页面标题（Title）</label>
+                        <input type="text" class="form-control" id="seo_home_title" name="seo_home_title"
+                               value="{{ settings.seo_home_title }}">
+                        <div class="form-text">可使用 {company_name} 占位符，例如：首页 - {company_name}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_home_description" class="form-label">元描述（Meta Description）</label>
+                        <textarea class="form-control" id="seo_home_description" name="seo_home_description" rows="3">{{ settings.seo_home_description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_home_keywords" class="form-label">关键词（Meta Keywords）</label>
+                        <input type="text" class="form-control" id="seo_home_keywords" name="seo_home_keywords"
+                               value="{{ settings.seo_home_keywords }}">
+                        <div class="form-text">用逗号分隔多个关键词</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 产品页SEO -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">产品页SEO设置</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="seo_products_title" class="form-label">页面标题（Title）</label>
+                        <input type="text" class="form-control" id="seo_products_title" name="seo_products_title"
+                               value="{{ settings.seo_products_title }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_products_description" class="form-label">元描述（Meta Description）</label>
+                        <textarea class="form-control" id="seo_products_description" name="seo_products_description" rows="3">{{ settings.seo_products_description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_products_keywords" class="form-label">关键词（Meta Keywords）</label>
+                        <input type="text" class="form-control" id="seo_products_keywords" name="seo_products_keywords"
+                               value="{{ settings.seo_products_keywords }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 关于我们 & 联系我们 SEO -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">关于我们 & 联系我们 SEO设置</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="seo_about_title" class="form-label">关于我们标题</label>
+                            <input type="text" class="form-control" id="seo_about_title" name="seo_about_title"
+                                   value="{{ settings.seo_about_title }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="seo_contact_title" class="form-label">联系我们标题</label>
+                            <input type="text" class="form-control" id="seo_contact_title" name="seo_contact_title"
+                                   value="{{ settings.seo_contact_title }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_about_description" class="form-label">关于我们描述</label>
+                        <textarea class="form-control" id="seo_about_description" name="seo_about_description" rows="3">{{ settings.seo_about_description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_contact_description" class="form-label">联系我们描述</label>
+                        <textarea class="form-control" id="seo_contact_description" name="seo_contact_description" rows="3">{{ settings.seo_contact_description }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg px-5">保存所有设置</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/base.html
+# 大小: 1083 字节
+```
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- 引入统一 SEO 模板 -->
+    {% include 'partials/seo.html' %}
+    
+    {% block extra_styles %}
+        {% include 'partials/extra_styles.html' %}
+    {% endblock %}
+</head>
+
+<body>
+    <!-- 前端导航菜单（动态公司名） -->
+    {% include 'partials/navbar.html' %}
+
+    <!-- 可选英雄区（首页等使用） -->
+    {% block hero_section %}{% endblock %}
+
+    <!-- 主体内容 -->
+    <main class="container my-5">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 页脚（动态公司名） -->
+    {% block footer %}
+        {% include 'partials/footer.html' %}
+    {% endblock %}
+
+    <!-- Bootstrap JS（国内稳定 CDN） -->
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js" defer></script>
+    
+    <!-- 额外脚本 -->
+    {% block extra_scripts %}
+        {% include 'partials/extra_scripts.html' %}
+    {% endblock %}
+</body>
+</html>
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/contact.html
+# 大小: 904 字节
+```
+{% extends "base.html" %}
+
+{% block hero_section %}
+<section class="hero-section" style="background-image: url('{{ url_for('static', filename='uploads/contact_hero.jpg') }}'); height: 22.5vh; min-height: 200px;">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <h1 class="display-5 fw-bold">Contact Us</h1>
+        <p class="lead mb-0">Welcome to inquire about custom furniture solutions</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Contact Information</h3>
+            <p>Phone: +86-400-888-1234<br>Email: sales@hotel-furniture.com<br>Address: Furniture Industrial Park, XXX City, China</p>
+        </div>
+        <div class="col-md-6">
+            <h3>Send Message</h3>
+            <p>Inquiry form coming soon...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/index.html
+# 大小: 2935 字节
+```
+{% extends "base.html" %}
+
+{% block hero_section %}
+<section class="hero-section" style="background-image: url('{{ url_for('static', filename='uploads/furniture_hero.jpg') }}');">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <h1 class="display-4 fw-bold">{{ company_name }}</h1>
+        <p class="lead">Professional Hotel Furniture Design & Manufacturing</p>
+        <a href="/products" class="btn btn-primary me-3">View Products</a>
+        <a href="/contact" class="btn btn-outline-dark">Contact Us</a>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="container featured-section">
+    <h2 class="section-title text-center">Featured Series</h2>
+    <div class="product-grid">
+        <!-- Luxury Sofa Example -->
+        <div class="product-card">
+            <img src="https://www.caffelattehome.com/img/inspirations/luxury-hotel-lobby-by-stuart-cg-studio/luxury-hotel-lobby-by-stuart-cg-studio.jpg" class="product-card-img" alt="Luxury Hotel Sofa">
+            <div class="product-card-body">
+                <h3 class="product-card-title">Luxury Fabric Sofa Collection</h3>
+                <p class="product-card-brand">Modern Hotel Series</p>
+            </div>
+        </div>
+
+        <!-- King Size Bed Example -->
+        <div class="product-card">
+            <img src="https://www.shutterstock.com/image-photo/luxury-hotel-room-modern-classic-600nw-2521917539.jpg" class="product-card-img" alt="King Size Hotel Bed">
+            <div class="product-card-body">
+                <h3 class="product-card-title">Premium King Size Bed</h3>
+                <p class="product-card-brand">Luxury Classic Series</p>
+            </div>
+        </div>
+
+        <!-- Dining Set Example -->
+        <div class="product-card">
+            <img src="https://image.made-in-china.com/2f0j00dpyclMSJUFqO/Italian-Modern-Marble-Dining-Table-Set-Metal-Frame-Dining-Tables-Luxury-Hotel-Villa-Dining-Room-Furniture.webp" class="product-card-img" alt="Modern Dining Set">
+            <div class="product-card-body">
+                <h3 class="product-card-title">Italian Marble Dining Set</h3>
+                <p class="product-card-brand">Contemporary Series</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Why Choose Us Section -->
+<div class="container mt-5">
+    <h2 class="section-title text-center">Why Choose Us</h2>
+    <div class="row text-center g-5">
+        <div class="col-md-4">
+            <h4>Premium Materials</h4>
+            <p>Selected eco-friendly solid wood and high-grade fabrics</p>
+        </div>
+        <div class="col-md-4">
+            <h4>Original Design</h4>
+            <p>In-house design team offering bespoke solutions</p>
+        </div>
+        <div class="col-md-4">
+            <h4>Comprehensive Service</h4>
+            <p>Global delivery with professional installation and after-sales support</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/partials/admin_navbar.html
+# 大小: 1029 字节
+```
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/admin">后台管理</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="/admin/settings">网站设置</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/products">产品管理</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/change_password">修改密码</a></li>
+                <li class="nav-item"><a class="nav-link" href="/">返回前端</a></li>
+                <li class="nav-item"><a class="nav-link text-danger" href="/admin/logout">退出登录</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/partials/extra_scripts.html
+# 大小: 347 字节
+```
+<!-- 默认额外脚本：这里放全局 JS -->
+<script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+
+<!-- 示例：可添加分析脚本等 -->
+<!-- <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script> -->
+
+
+<!-- 子页面可在自己的 extra_scripts block 中添加自定义脚本 -->
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/partials/extra_styles.html
+# 大小: 719 字节
+```
+<!-- Bootstrap 5 CSS - 换成 staticfile.org（极稳） -->
+<link href="https://cdn.staticfile.org/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Bootstrap 5 JS - 同样换成 staticfile.org -->
+<script src="https://cdn.staticfile.org/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js" defer></script>
+
+<!-- 自定义 CSS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+
+<!-- 示例：Font Awesome 图标库（可选，根据需要保留或删除） -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<!-- 子页面可继续在自己的 extra_styles block 中添加额外链接或内联样式 -->
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/partials/footer.html
+# 大小: 1201 字节
+```
+<footer class="bg-dark text-white py-5 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <h5>{{ company_name }}</h5>
+                <p>Professional Hotel Furniture Manufacturer<br>Creating Premium Hospitality Spaces Worldwide</p>
+            </div>
+            <div class="col-md-4">
+                <h5>Quick Links</h5>
+                <ul class="list-unstyled">
+                    <li><a href="/" class="text-white">Home</a></li>
+                    <li><a href="/products" class="text-white">Products</a></li>
+                    <li><a href="/about" class="text-white">About Us</a></li>
+                    <li><a href="/contact" class="text-white">Contact Us</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h5>Contact Information</h5>
+                <p>Phone: +86-400-888-1234<br>Email: sales@hotel-furniture.com<br>Address: Furniture Industrial Park, XXX City, China</p>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <p class="mb-0">&copy; {{ current_year }} {{ company_name }} All Rights Reserved</p>
+        </div>
+    </div>
+</footer>
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/partials/navbar.html
+# 大小: 1386 字节
+```
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
+    <div class="container">
+        <!-- 动态公司名称或 Logo -->
+        <a class="navbar-brand d-flex align-items-center" href="/">
+            {% if company_logo_url %}
+                <img src="{{ company_logo_url }}?v={{ range(1,1000000)|random }}" 
+                     alt="{{ company_name }}" 
+                     style="height: 40px; object-fit: contain; max-width: 200px;">
+            {% else %}
+                <span class="fw-bold">{{ company_name }}</span>
+            {% endif %}
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/products">Products</a></li>
+                <li class="nav-item"><a class="nav-link" href="/featured">Featured Series</a></li>
+                <li class="nav-item"><a class="nav-link" href="/about">About Us</a></li>
+                <li class="nav-item"><a class="nav-link" href="/contact">Contact Us</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/partials/page_title.html
+# 大小: 400 字节
+```
+<!-- 可复用于首页或其他页面的英雄区标题 -->
+<section class="bg-primary text-white py-5 mb-5 text-center">
+    <div class="container">
+        <h1 class="display-4 fw-bold">{% block hero_title %}默认页面标题{% endblock %}</h1>
+        <p class="lead">{% block hero_subtitle %}副标题描述{% endblock %}</p>
+        {% block hero_buttons %}{% endblock %}
+    </div>
+</section>
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/partials/seo.html
+# 大小: 471 字节
+```
+<title>{{ page_title }}</title>
+
+<meta name="description" content="{{ page_description }}">
+<meta name="keywords" content="{{ page_keywords }}">
+
+<link rel="canonical" href="{{ request.url }}">
+
+<meta property="og:title" content="{{ page_title }}">
+<meta property="og:description" content="{{ page_description }}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:site_name" content="{{ company_name }}">
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/products/list.html
+# 大小: 1959 字节
+```
+{% extends "base.html" %}
+
+{% block hero_section %}
+<section class="hero-section" style="background-image: url('{{ url_for('static', filename='uploads/products_hero.jpg') }}'); height: 22.5vh; min-height: 200px;">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <h1 class="display-5 fw-bold">Our Products</h1>
+        <p class="lead mb-0">Premium Hotel Furniture Collection</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="container featured-section">
+    <h2 class="section-title text-center">All Products</h2>
+    <div class="product-grid">
+        {% for product in products %}
+        <a href="{{ url_for('products.product_detail', product_id=product.id) }}" class="text-decoration-none">
+            <div class="product-card">
+                {% if product.image %}
+                <img src="{{ url_for('static', filename='uploads/' + product.image) }}" 
+                     class="product-card-img" 
+                     alt="{{ product.name }}">
+                {% else %}
+                <img src="https://via.placeholder.com/800x600?text=No+Image" 
+                     class="product-card-img" 
+                     alt="No Image">
+                {% endif %}
+                <div class="product-card-body">
+                    <h3 class="product-card-title">{{ product.name }}</h3>
+                    <p class="product-card-brand">
+                        {% if product.featured_series %}
+                            {{ product.featured_series }}
+                        {% else %}
+                            {{ product.category.name if product.category else 'Uncategorized' }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </a>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">No products available yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app/templates/products/product_detail.html
+# 大小: 5335 字节
+```
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - {{ company_name }}{% endblock %}
+
+{% block hero_section %}
+<section class="hero-section" style="background-image: url('{{ url_for('static', filename='uploads/' + product.image) if product.image else 'uploads/default_hero.jpg' }}');">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <h1 class="display-4 fw-bold">{{ product.name }}</h1>
+        <p class="lead">{{ product.category.name if product.category else 'Uncategorized' }}</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row g-5">
+        <!-- 主图区域 -->
+        <div class="col-lg-8">
+            <!-- 主图 -->
+            {% if product.image %}
+            <img src="{{ url_for('static', filename='uploads/' + product.image) }}" 
+                 class="img-fluid rounded shadow-lg mb-5" 
+                 alt="{{ product.name }}" 
+                 style="max-height: 600px; object-fit: cover; width: 100%;">
+            {% else %}
+            <div class="bg-light border rounded d-flex align-items-center justify-content-center mb-5" style="height: 600px;">
+                <p class="text-muted h4">No main image available</p>
+            </div>
+            {% endif %}
+
+            <!-- 详情画廊（多图展示） -->
+            {% if product.photos %}
+            <h3 class="mb-4">Product Gallery</h3>
+            <div class="row g-4">
+                {% for photo in product.photos.split(',') %}
+                <div class="col-md-6">
+                    <img src="{{ url_for('static', filename='uploads/' + photo.strip()) }}" 
+                         class="img-fluid rounded shadow-sm" 
+                         alt="{{ product.name }} detail view">
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- 产品描述 -->
+            <h3 class="mt-5 mb-4">Description</h3>
+            <p class="lead">{{ product.description or 'No description available.' }}</p>
+        </div>
+
+        <!-- 规格侧边栏 -->
+        <div class="col-lg-4">
+            <div class="card shadow sticky-top" style="top: 100px;">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Product Specifications</h4>
+                    <ul class="list-group list-group-flush">
+                        <!-- Dimensions with mm and inches -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Dimensions</strong>
+                            <span class="text-end">
+                                {% if product.length and product.width and product.height %}
+                                    {{ product.length }} × {{ product.width }} × {{ product.height }} mm<br>
+                                    <small class="text-muted">
+                                        ({{ (product.length / 25.4)|round(1) }} × {{ (product.width / 25.4)|round(1) }} × {{ (product.height / 25.4)|round(1) }} inches)
+                                    </small>
+                                {% else %}
+                                    <em>N/A</em>
+                                {% endif %}
+                            </span>
+                        </li>
+
+                        <!-- Seat Height with mm and inches -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Seat Height</strong>
+                            <span class="text-end">
+                                {% if product.seat_height %}
+                                    {{ product.seat_height }} mm<br>
+                                    <small class="text-muted">({{ (product.seat_height / 25.4)|round(1) }} inches)</small>
+                                {% else %}
+                                    <em>N/A</em>
+                                {% endif %}
+                            </span>
+                        </li>
+
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Base Material</strong>
+                            <span>{{ product.base_material or 'N/A' }}</span>
+                        </li>
+
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Surface Material</strong>
+                            <span>{{ product.surface_material or 'N/A' }}</span>
+                        </li>
+
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>For Space</strong>
+                            <span>{{ product.applicable_space or 'All Areas' }}</span>
+                        </li>
+
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Featured Series</strong>
+                            <span>{{ product.featured_series or 'Standard' }}</span>
+                        </li>
+                    </ul>
+
+                    <div class="mt-5">
+                        <a href="/contact" class="btn btn-primary btn-lg w-100">Inquire Now</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: app.py
+# 大小: 99 字节
+```
+from app import create_app
+
+app = create_app()
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: code2ai.py
+# 大小: 6145 字节
+```
+import os
+import argparse
+from pathlib import Path
+from datetime import datetime
+
+# 默认要包含的文件扩展名
+INCLUDE_EXTENSIONS = {
+    '.py', '.js', '.ts', '.jsx', '.tsx', '.html', '.css', '.scss', '.json',
+    '.yaml', '.yml', '.md', '.txt', '.toml', '.ini', '.cfg', '.env.example',
+    '.dockerfile', 'dockerfile', '.sh', '.bat', '.sql', '.java', '.go', '.rs',
+    '.c', '.cpp', '.h', '.php', '.rb', '.swift', '.kt'
+}
+
+# 默认要排除的目录和文件
+EXCLUDE_DIRS = {
+    '__pycache__', '.git', '.svn', '.hg', '.idea', '.vscode', 'node_modules',
+    '.venv', 'venv', 'env', '.env', 'dist', 'build', 'target', '.next',
+    '.gradle', '.cache', '.pytest_cache', '.mypy_cache', 'coverage', 'code2ai'
+}
+
+EXCLUDE_FILES = {
+    '.gitignore', '.DS_Store', 'Thumbs.db'
+}
+
+DB_EXTENSIONS = {'.sqlite', '.sqlite3', '.db', '.mdb'}
+
+def should_exclude(path: Path) -> bool:
+    """
+    判断是否应该排除某个路径（文件或目录）
+    """
+    # 直接匹配名称
+    if path.name in EXCLUDE_DIRS:
+        return True
+    if path.name in EXCLUDE_FILES:
+        return True
+
+    # 数据库文件
+    if path.suffix.lower() in DB_EXTENSIONS:
+        return True
+
+    # 备份文件或临时文件
+    if path.name.endswith('~') or path.name.startswith('.#'):
+        return True
+
+    # 关键增强：如果路径的任何部分包含 code2ai 文件夹，则彻底排除
+    # 防止 code2ai 目录下的任何文件被意外收集（即使未来改名或嵌套）
+    if 'code2ai' in path.parts:
+        return True
+
+    return False
+
+def should_include(path: Path) -> bool:
+    """判断文件是否应该被包含"""
+    return path.suffix.lower() in INCLUDE_EXTENSIONS or path.name.lower() == 'dockerfile'
+
+def collect_files(root_dir: Path):
+    files = []
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        current_path = Path(dirpath)
+
+        # 原地修改 dirnames，提前跳过所有需要排除的目录（提升效率）
+        dirnames[:] = [
+            d for d in dirnames
+            if not should_exclude(current_path / d)
+        ]
+
+        for filename in filenames:
+            file_path = current_path / filename
+
+            # 跳过明确要排除的文件
+            if should_exclude(file_path):
+                continue
+
+            # 只包含指定扩展名的文件
+            if should_include(file_path):
+                files.append(file_path)
+
+    return sorted(files)
+
+def generate_output_path(root: Path, user_output: str) -> Path:
+    """
+    生成最终输出路径。
+    如果用户只指定了目录（如 code2ai/），则自动在该目录下生成带时间戳的文件。
+    """
+    output = Path(user_output).expanduser().resolve()
+
+    # 如果是目录或仅指定了 code2ai，则生成带时间戳的文件名
+    if output.is_dir() or output.suffix == "" or output.name == "code2ai":
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = f"project_review_{timestamp}.txt"
+        target_dir = root / "code2ai" if output.name == "code2ai" else output
+        target_dir.mkdir(parents=True, exist_ok=True)
+        return target_dir / filename
+
+    # 用户指定了完整文件名，直接使用（会覆盖同名文件）
+    output.parent.mkdir(parents=True, exist_ok=True)
+    return output
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="将项目文件整合为单个 txt 文件，供 AI 审查使用（已排除 code2ai 目录）"
+    )
+    parser.add_argument(
+        "project_dir",
+        nargs="?",
+        default=".",
+        help="项目根目录路径（默认当前目录）"
+    )
+    parser.add_argument(
+        "-o", "--output",
+        default="code2ai/",
+        help="输出文件路径。如果只指定目录（如 code2ai/），会自动生成带时间戳的文件名"
+    )
+    parser.add_argument(
+        "--max-size",
+        type=int,
+        default=500_000,  # 500KB
+        help="单个文件最大字节数，超过则跳过（默认 500KB）"
+    )
+
+    args = parser.parse_args()
+    root = Path(args.project_dir).resolve()
+
+    if not root.is_dir():
+        print(f"错误：路径 {root} 不存在或不是目录")
+        return
+
+    # 生成输出路径
+    output_path = generate_output_path(root, args.output)
+
+    # 收集文件（此时 code2ai 目录一定不会被遍历进去）
+    files = collect_files(root)
+
+    print(f"正在处理项目目录：{root}")
+    print(f"找到 {len(files)} 个待包含的文件")
+    print(f"将写入：{output_path}\n")
+
+    skipped = 0
+    with open(output_path, "w", encoding="utf-8") as outfile:
+        outfile.write(f"# 项目文件汇总（用于 AI 审查）\n")
+        outfile.write(f"# 项目路径：{root}\n")
+        outfile.write(f"# 生成时间：{datetime.now().isoformat()}\n")
+        outfile.write(f"# 共包含 {len(files)} 个文件\n\n")
+        outfile.write("=" * 80 + "\n\n")
+
+        for file_path in files:
+            rel_path = file_path.relative_to(root)
+            try:
+                size = file_path.stat().st_size
+                if size > args.max_size:
+                    print(f"跳过过大文件：{rel_path} ({size/1024:.1f} KB)")
+                    skipped += 1
+                    continue
+
+                content = file_path.read_text(encoding="utf-8", errors="replace")
+
+                outfile.write(f"### 文件: {rel_path}\n")
+                outfile.write(f"# 大小: {size} 字节\n")
+                outfile.write("```\n")
+                outfile.write(content)
+                if not content.endswith("\n"):
+                    outfile.write("\n")
+                outfile.write("```\n")
+                outfile.write("\n" + "-" * 80 + "\n\n")
+
+            except Exception as e:
+                print(f"读取失败：{rel_path} ({e})")
+                skipped += 1
+
+    total_mb = output_path.stat().st_size / 1024 / 1024
+    print(f"\n完成！已生成文件：")
+    print(f"   {output_path}")
+    if skipped > 0:
+        print(f"（跳过了 {skipped} 个文件）")
+    print(f"文件总大小约：{total_mb:.2f} MB")
+
+if __name__ == "__main__":
+    main()
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: config.py
+# 大小: 267 字节
+```
+import os
+
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-me'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance/site.db')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: init_schema.py
+# 大小: 6323 字节
+```
+import os
+from app import create_app, db
+from app.models import User, Settings, Category, Product
+from werkzeug.security import generate_password_hash
+
+app = create_app()
+
+instance_path = os.path.join(app.root_path, 'instance')
+os.makedirs(instance_path, exist_ok=True)
+
+with app.app_context():
+    db.create_all()
+
+    # 默认管理员账号
+    if not User.query.filter_by(username='admin').first():
+        admin_user = User(
+            username='admin',
+            password=generate_password_hash('admin123')
+        )
+        db.session.add(admin_user)
+
+    # 默认网站设置 + SEO 配置
+    if Settings.query.count() == 0:
+        default_settings = Settings(
+            company_name='XX Hotel Furniture Manufacturer',
+            theme='light',
+
+            # Homepage SEO
+            seo_home_title='Home - Premium Hotel Furniture | {company_name}',
+            seo_home_description='Professional hotel furniture manufacturer specializing in luxury beds, sofas, wardrobes and custom solutions for 5-star hotels worldwide.',
+            seo_home_keywords='hotel furniture, luxury hotel beds, hotel sofas, custom hospitality furniture, hotel room furniture',
+
+            # Products Page SEO
+            seo_products_title='Hotel Furniture Products | Beds, Sofas, Wardrobes - {company_name}',
+            seo_products_description='Explore our complete collection of premium hotel furniture including beds, nightstands, sofas, wardrobes and custom case goods for luxury hospitality projects.',
+            seo_products_keywords='hotel furniture products, hotel beds, hotel sofas, hotel wardrobes, luxury hotel furniture collection',
+
+            # About Page SEO
+            seo_about_title='About Us - {company_name} | Leading Hotel Furniture Manufacturer',
+            seo_about_description='Learn about {company_name}, a professional hotel furniture manufacturer with years of experience in custom hospitality furniture design and production.',
+
+            # Contact Page SEO
+            seo_contact_title='Contact Us - {company_name} | Hotel Furniture Inquiry',
+            seo_contact_description='Contact {company_name} for custom hotel furniture solutions, quotes, and partnership opportunities.'
+        )
+        db.session.add(default_settings)
+
+    # 酒店家具英文分类（Loose + Fixed）
+    if Category.query.count() == 0:
+        loose_cats = [
+            "Beds",
+            "Nightstands/Bedside Tables",
+            "Sofas and Armchairs",
+            "Coffee Tables/Tea Tables",
+            "Lounge Chairs/Ottomans",
+            "Desk Chairs/Writing Chairs",
+            "Dining Chairs",
+            "Luggage Racks/Benches",
+            "Side Tables/End Tables",
+            "Accent Chairs"
+        ]
+
+        fixed_cats = [
+            "Headboards",
+            "Wardrobes/Closets/Armoires",
+            "Built-in Desks/Writing Tables",
+            "TV Cabinets/Entertainment Units",
+            "Dressers/Chests of Drawers",
+            "Vanities/Bathroom Cabinets",
+            "Built-in Minibars",
+            "Wall Panels/Decorative Paneling",
+            "Fixed Shelving/Storage Units",
+            "Console Tables (wall-fixed)"
+        ]
+
+        all_cats = loose_cats + fixed_cats
+        for cat_name in all_cats:
+            db.session.add(Category(name=cat_name))
+
+        # 示例产品（包含座高、基材、覆面、适用空间、精选系列）
+        prod1 = Product(
+            name="King Size Hotel Bed",
+            description="Luxury 5-star hotel standard bed with premium support",
+            image="bed_king.jpg",
+            length=2000, width=1800, height=800,
+            seat_height=None,
+            base_material="Solid Wood",
+            surface_material="Fabric",
+            featured_series="Modern Hotel Series,Luxury Classic Series",
+            applicable_space="Guest Room, Suite",
+            category=Category.query.filter_by(name="Beds").first()
+        )
+        prod2 = Product(
+            name="Built-in Wardrobe with Sliding Doors",
+            description="Large capacity storage with full-length mirror",
+            image="wardrobe_builtin.jpg",
+            length=2400, width=600, height=2400,
+            seat_height=None,
+            base_material="Engineered Wood",
+            surface_material="Lacquer Finish",
+            featured_series="Modern Hotel Series",
+            applicable_space="Guest Room",
+            category=Category.query.filter_by(name="Wardrobes/Closets/Armoires").first()
+        )
+        prod3 = Product(
+            name="Hotel Writing Desk",
+            description="Multi-functional desk with drawers",
+            image="desk_hotel.jpg",
+            length=1200, width=600, height=750,
+            seat_height=None,
+            base_material="Solid Wood",
+            surface_material="Lacquer Finish",
+            featured_series="Modern Hotel Series",
+            applicable_space="Guest Room",
+            category=Category.query.filter_by(name="Built-in Desks/Writing Tables").first()
+        )
+        prod4 = Product(
+            name="Three-Seater Fabric Sofa",
+            description="Comfortable and durable for hotel lobby",
+            image="sofa_fabric.jpg",
+            length=2200, width=900, height=850,
+            seat_height=450,
+            base_material="Metal + Solid Wood",
+            surface_material="Fabric",
+            featured_series="Luxury Classic Series",
+            applicable_space="Lobby, Lounge",
+            category=Category.query.filter_by(name="Sofas and Armchairs").first()
+        )
+        prod5 = Product(
+            name="TV Cabinet with Minibar",
+            description="Integrated minibar and storage",
+            image="tv_cabinet.jpg",
+            length=1800, width=450, height=600,
+            seat_height=None,
+            base_material="Engineered Wood",
+            surface_material="Lacquer Finish",
+            featured_series="Modern Hotel Series",
+            applicable_space="Guest Room",
+            category=Category.query.filter_by(name="TV Cabinets/Entertainment Units").first()
+        )
+
+        db.session.add_all([prod1, prod2, prod3, prod4, prod5])
+
+    db.session.commit()
+    print("Database initialization complete! English hotel furniture theme with SEO settings applied.")
+    print("Admin account: admin / admin123")
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: requirements.txt
+# 大小: 130 字节
+```
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.7
+Flask-WTF==1.2.1
+flask-login==0.6.3
+python-dotenv==1.0.1
+Pillow==10.4.0
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: run.bat
+# 大小: 2856 字节
+```
+@echo off
+chcp 65001 >nul
+cls
+
+echo.
+echo ==================================================
+echo     XX生产商官网 - 一键启动脚本（国内优化版）
+echo     已内置清华镜像源，下载依赖更快
+echo ==================================================
+echo.
+
+:: 设置项目根目录（当前目录）
+set PROJECT_ROOT=%~dp0
+cd /d %PROJECT_ROOT%
+
+:: 虚拟环境目录
+set VENV_DIR=venv
+
+:: 国内镜像源（清华源，速度快稳定）
+set PIP_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple
+set PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn
+
+:: 检查虚拟环境是否存在
+if not exist "%VENV_DIR%\Scripts\activate.bat" (
+    echo [1/5] 未检测到虚拟环境，正在创建...
+    python -m venv %VENV_DIR%
+    if errorlevel 1 (
+        echo ERROR: 创建虚拟环境失败！请确认已安装 Python 并添加到 PATH。
+        pause
+        exit /b 1
+    )
+    echo 虚拟环境创建成功。
+) else (
+    echo [1/5] 检测到现有虚拟环境。
+)
+
+:: 激活虚拟环境
+echo.
+echo [2/5] 正在激活虚拟环境...
+call %VENV_DIR%\Scripts\activate.bat
+if errorlevel 1 (
+    echo ERROR: 激活虚拟环境失败！
+    pause
+    exit /b 1
+)
+
+:: 升级 pip 并安装依赖（使用国内镜像源）
+echo.
+echo [3/5] 正在升级 pip 并安装项目依赖（使用清华镜像源）...
+pip install --upgrade pip -i %PIP_INDEX% --trusted-host %PIP_TRUSTED_HOST% -q
+
+if exist requirements.txt (
+    pip install -r requirements.txt -i %PIP_INDEX% --trusted-host %PIP_TRUSTED_HOST% -q
+    if errorlevel 1 (
+        echo WARNING: 部分依赖安装失败，但将继续尝试运行。
+    ) else (
+        echo 所有依赖已满足或已安装。
+    )
+) else (
+    echo WARNING: 未找到 requirements.txt 文件！
+)
+
+:: 检查数据库是否存在
+set DB_PATH=instance\site.db
+if not exist "%DB_PATH%" (
+    echo.
+    echo [4/5] 未检测到数据库文件，正在初始化...
+    if exist init_schema.py (
+        python init_schema.py
+        if errorlevel 1 (
+            echo ERROR: 执行 init_schema.py 失败！请检查脚本。
+            pause
+            exit /b 1
+        )
+        echo 数据库初始化完成（%DB_PATH%）。
+    ) else (
+        echo ERROR: 未找到 init_schema.py 脚本！无法创建数据库。
+        pause
+        exit /b 1
+    )
+) else (
+    echo [4/5] 检测到现有数据库（%DB_PATH%），跳过初始化。
+)
+
+:: 运行项目并自动打开浏览器
+echo.
+echo [5/5] 正在启动 Flask 项目...
+echo 访问地址：http://127.0.0.1:5000
+echo 按 Ctrl+C 可停止服务器。
+echo.
+echo 正在启动服务器并自动打开浏览器...
+start "" http://127.0.0.1:5000
+
+python app.py
+
+:: 如果程序异常退出
+if errorlevel 1 (
+    echo.
+    echo ERROR: 项目运行出错！
+)
+
+echo.
+echo ==================================================
+echo 项目已停止。
+pause
+```
+
+--------------------------------------------------------------------------------
+
+### 文件: run.sh
+# 大小: 3445 字节
+```
+#!/bin/bash
+
+# 设置终端编码为 UTF-8，确保中文显示正常
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+clear
+
+echo
+echo "=================================================="
+echo "     酒店家具厂官网 - 一键启动脚本（国内优化版）"
+echo "     已内置清华镜像源，下载依赖更快"
+echo "=================================================="
+echo
+
+# 设置项目根目录为当前脚本所在目录
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$PROJECT_ROOT" || { echo "ERROR: 无法进入项目目录！"; exit 1; }
+
+# 虚拟环境目录
+VENV_DIR="venv"
+
+# 国内清华镜像源
+PIP_INDEX="https://pypi.tuna.tsinghua.edu.cn/simple"
+PIP_TRUSTED_HOST="pypi.tuna.tsinghua.edu.cn"
+
+# 检查并创建虚拟环境
+if [ ! -d "$VENV_DIR" ]; then
+    echo "[1/5] 未检测到虚拟环境，正在创建..."
+    python3 -m venv "$VENV_DIR"
+    if [ $? -ne 0 ]; then
+        echo "ERROR: 创建虚拟环境失败！请确认已安装 Python3 并正确配置 PATH。"
+        read -p "按 Enter 键退出..."
+        exit 1
+    fi
+    echo "虚拟环境创建成功。"
+else
+    echo "[1/5] 检测到现有虚拟环境。"
+fi
+
+# 激活虚拟环境
+echo
+echo "[2/5] 正在激活虚拟环境..."
+source "$VENV_DIR/bin/activate"
+if [ $? -ne 0 ]; then
+    echo "ERROR: 激活虚拟环境失败！"
+    read -p "按 Enter 键退出..."
+    exit 1
+fi
+
+# 升级 pip 并安装依赖
+echo
+echo "[3/5] 正在升级 pip 并安装项目依赖（使用清华镜像源）..."
+pip install --upgrade pip -i "$PIP_INDEX" --trusted-host "$PIP_TRUSTED_HOST" -q
+
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt -i "$PIP_INDEX" --trusted-host "$PIP_TRUSTED_HOST" -q
+    if [ $? -ne 0 ]; then
+        echo "WARNING: 部分依赖安装失败，但将继续尝试运行。"
+    else
+        echo "所有依赖已满足或已安装。"
+    fi
+else
+    echo "WARNING: 未找到 requirements.txt 文件！"
+fi
+
+# 检查数据库是否存在
+DB_PATH="instance/site.db"
+if [ ! -f "$DB_PATH" ]; then
+    echo
+    echo "[4/5] 未检测到数据库文件，正在初始化..."
+    if [ -f "init_schema.py" ]; then
+        python init_schema.py
+        if [ $? -ne 0 ]; then
+            echo "ERROR: 执行 init_schema.py 失败！请检查脚本。"
+            read -p "按 Enter 键退出..."
+            exit 1
+        fi
+        echo "数据库初始化完成（$DB_PATH）。"
+    else
+        echo "ERROR: 未找到 init_schema.py 脚本！无法创建数据库。"
+        read -p "按 Enter 键退出..."
+        exit 1
+    fi
+else
+    echo "[4/5] 检测到现有数据库（$DB_PATH），跳过初始化。"
+fi
+
+# 启动 Flask 项目并尝试打开浏览器
+echo
+echo "[5/5] 正在启动 Flask 项目..."
+echo "访问地址：http://127.0.0.1:5000"
+echo "按 Ctrl+C 可停止服务器。"
+echo
+echo "正在启动服务器并尝试自动打开浏览器..."
+
+# 尝试打开浏览器（支持 macOS、Linux、WSL）
+if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open http://127.0.0.1:5000
+elif command -v open >/dev/null 2>&1; then
+    open http://127.0.0.1:5000
+elif command -v start >/dev/null 2>&1; then
+    start http://127.0.0.1:5000
+fi
+
+# 启动 Flask
+python app.py
+
+# 捕获退出状态
+if [ $? -ne 0 ]; then
+    echo
+    echo "ERROR: 项目运行出错！"
+fi
+
+echo
+echo "=================================================="
+echo "项目已停止。"
+read -p "按 Enter 键退出..."
+```
+
+--------------------------------------------------------------------------------
+

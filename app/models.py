@@ -13,6 +13,7 @@ class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     company_name = db.Column(db.String(100), default='XX Hotel Furniture Manufacturer')
     theme = db.Column(db.String(20), default='light')
+    logo = db.Column(db.String(200))  # 新增：公司 Logo 文件名（固定为 company_logo）
 
     # Homepage SEO
     seo_home_title = db.Column(db.String(200), default='Home - Premium Hotel Furniture | {company_name}')

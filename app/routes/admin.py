@@ -4,6 +4,7 @@ from app.models import Product, Category, User, Settings
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
+from PIL import Image  # 需要 pip install pillow
 
 admin_bp = Blueprint('admin', __name__, template_folder='templates/admin')
 
@@ -59,6 +60,40 @@ def settings():
         settings.seo_contact_title = request.form.get('seo_contact_title', '')
         settings.seo_contact_description = request.form.get('seo_contact_description', '')
         
+        # 处理 Logo 上传
+        logo_file = request.files.get('logo')
+        if logo_file and logo_file.filename != '':
+            upload_folder = os.path.join('app', 'static', 'uploads', 'logo')
+            os.makedirs(upload_folder, exist_ok=True)
+
+            # 临时保存用于检查尺寸
+            filename = logo_file.filename.rsplit('.', 1)[-1].lower() if '.' in logo_file.filename else 'png'
+            temp_filename = f'temp_company_logo.{filename}'
+            temp_path = os.path.join(upload_folder, temp_filename)
+            logo_file.save(temp_path)
+
+            try:
+                with Image.open(temp_path) as img:
+                    if img.width > 600 or img.height > 300:
+                        os.remove(temp_path)
+                        flash('Logo 图片尺寸超过最大限制 600×300 像素，请重新上传！', 'danger')
+                    else:
+                        # 尺寸合法，统一保存为 company_logo（覆盖旧文件）
+                        final_path = os.path.join(upload_folder, 'company_logo')
+                        if os.path.exists(final_path):
+                            os.remove(final_path)
+                        os.rename(temp_path, final_path)
+                        settings.logo = 'company_logo'
+                        flash('Logo 更新成功！', 'success')
+            except Exception as e:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                flash(f'图片处理失败：{str(e)}', 'danger')
+
+        # 可选：如果以后想加“移除 Logo”按钮，可以在这里处理
+        # elif request.form.get('remove_logo'):
+        #     ...
+
         db.session.commit()
         flash('所有设置保存成功！', 'success')
         return redirect(url_for('admin.settings'))

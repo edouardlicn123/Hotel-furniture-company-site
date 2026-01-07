@@ -1,9 +1,9 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, url_for
 from app.models import Settings
 
 main_bp = Blueprint('main', __name__)
 
-# 全局注入公司名称 + 当前页面 SEO 配置
+# 全局注入公司名称 + 当前页面 SEO 配置 + 公司 Logo URL
 @main_bp.context_processor
 def inject_seo_data():
     settings = Settings.query.first()
@@ -12,7 +12,8 @@ def inject_seo_data():
         company_name = 'XX Hotel Furniture Manufacturer'
         current_title = 'Home - Premium Hotel Furniture | XX Hotel Furniture Manufacturer'
         current_description = 'Professional hotel furniture manufacturer specializing in luxury beds, sofas, wardrobes and custom solutions for 5-star hotels worldwide.'
-        current_keywords = 'hotel furniture, luxury hotel beds, hotel sofas, custom hospitality furniture'
+        current_keywords = 'hotel furniture, luxury hotel beds, hotel sofas, custom hospitality furniture, hotel room furniture'
+        company_logo_url = None
     else:
         company_name = settings.company_name
         
@@ -40,11 +41,15 @@ def inject_seo_data():
             current_description = 'Premium hotel furniture solutions for luxury hospitality.'
             current_keywords = 'hotel furniture, custom hotel furniture'
 
+        # Logo URL：如果数据库中有 logo 字段且值为 'company_logo'，则提供 URL
+        company_logo_url = url_for('static', filename='uploads/logo/company_logo') if settings.logo else None
+
     return dict(
         company_name=company_name,
         page_title=current_title,
         page_description=current_description,
-        page_keywords=current_keywords
+        page_keywords=current_keywords,
+        company_logo_url=company_logo_url
     )
 
 @main_bp.route('/')

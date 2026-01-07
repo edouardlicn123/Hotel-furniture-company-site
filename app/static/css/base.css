@@ -1,0 +1,220 @@
+/* base.css - 基础结构与通用组件（颜色全部变量化） */
+
+body {
+    font-family: "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    line-height: 1.8;
+    font-size: 16px;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1320px;
+    padding-left: 40px;
+    padding-right: 40px;
+}
+
+@media (max-width: 1200px) {
+    .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
+
+/* 导航栏基础结构 */
+.navbar {
+    background-color: var(--navbar-bg) !important;
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 0;
+    transition: all 0.3s ease;
+}
+
+.navbar.scrolled {
+    padding: 0.8rem 0;
+    box-shadow: var(--shadow-md);
+}
+
+.navbar-brand {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-inverse) !important;
+    letter-spacing: -0.5px;
+}
+
+.nav-link {
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--text-inverse) !important;
+    padding: 0.5rem 1rem !important;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--accent) !important;
+    background-color: var(--hover-bg);
+    border-radius: 0.375rem;
+}
+
+/* 英雄区 */
+.hero-section {
+    position: relative;
+    height: 80vh;
+    min-height: 600px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--text-inverse);
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--hero-overlay);
+}
+
+.hero-content h1 {
+    font-size: clamp(3rem, 8vw, 4.5rem);
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 1.5rem;
+}
+
+.hero-content p {
+    font-size: 1.4rem;
+    margin-bottom: 2.5rem;
+    opacity: 0.95;
+}
+
+/* 产品卡片与网格 */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 60px 40px;
+    margin-top: 60px;
+}
+
+.product-card {
+    background: var(--card-bg);
+    border-radius: 0;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: all 0.4s ease;
+    margin-bottom: 40px;
+}
+
+.product-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-hover);
+}
+
+.product-card-img {
+    height: 350px;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+}
+
+.product-card:hover .product-card-img {
+    transform: scale(1.05);
+}
+
+.product-card-body {
+    padding: 1.5rem 0;
+    text-align: center;
+}
+
+.product-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.product-card-brand {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 按钮 */
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+    border-radius: 0;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+.btn-outline-dark {
+    border-color: var(--primary);
+    color: var(--primary);
+    border-radius: 0;
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+}
+
+.btn-outline-dark:hover {
+    background-color: var(--primary);
+    color: white;
+}
+
+/* 标题与间距 */
+h2.section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 3rem;
+    text-align: center;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+}
+
+footer {
+    background-color: var(--footer-bg) !important;
+    color: var(--text-secondary);
+    padding: 80px 0 40px;
+    font-size: 0.95rem;
+}
+
+footer a {
+    color: var(--text-secondary);
+    transition: color 0.3s;
+}
+
+footer a:hover {
+    color: var(--text-inverse);
+}
+
+/* 动画 */
+.fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s ease;
+}
+
+.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 精选系列优化（高端展示） */
+.featured-section .product-grid {
+    gap: 60px 40px;
+    margin-top: 80px;
+}
+
+.featured-section .product-card-img {
+    height: 450px;
+}
+
+/* 其他原有样式保留并变量化（略微精简） */
+img { max-width: 100%; height: auto; }

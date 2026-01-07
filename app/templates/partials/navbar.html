@@ -1,7 +1,15 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
     <div class="container">
-        <!-- 动态公司名称（后台设置） -->
-        <a class="navbar-brand fw-bold" href="/">{{ company_name }}</a>
+        <!-- 动态公司名称或 Logo -->
+        <a class="navbar-brand d-flex align-items-center" href="/">
+            {% if company_logo_url %}
+                <img src="{{ company_logo_url }}?v={{ range(1,1000000)|random }}" 
+                     alt="{{ company_name }}" 
+                     style="height: 40px; object-fit: contain; max-width: 200px;">
+            {% else %}
+                <span class="fw-bold">{{ company_name }}</span>
+            {% endif %}
+        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -9,7 +17,7 @@
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="/products">Products</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Featured Series</a></li>
+                <li class="nav-item"><a class="nav-link" href="/featured">Featured Series</a></li>
                 <li class="nav-item"><a class="nav-link" href="/about">About Us</a></li>
                 <li class="nav-item"><a class="nav-link" href="/contact">Contact Us</a></li>
             </ul>
