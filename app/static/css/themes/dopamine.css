@@ -1,106 +1,143 @@
-/* themes/dopamine.css - 多巴胺活力配色主题（鲜艳、高饱和、快乐爆棚） - 已降低主菜单透明度至 80% 不透明 */
+/* themes/dopamine.css - 多巴胺活力配色主题（明亮轻快版，完全无白条） */
 
 :root {
-    /* 主配色 - 多巴胺经典：高饱和彩虹活力色，激发快乐感 */
-    --primary: #FF2E63;              /* 亮粉红（主按钮、链接、核心强调） */
-    --primary-dark: #E91E63;         /* 深粉红（hover、渐变深端） */
-    --primary-light: #FFEBF0;        /* 极浅粉背景（整体活力底调） */
-    --accent: #FF9500;               /* 活力橙黄（次强调、图标、点缀） */
+    /* 主配色 - 多巴胺经典高饱和但更轻快明亮 */
+    --primary: #FF6B9D;           /* 主强调色：明亮活力粉（替代原来的深粉） */
+    --primary-dark: #FF4D8A;       /* hover 深端：稍深但仍鲜活 */
+    --primary-light: #FFEBF0;      /* 极浅粉 - 边框、细部 */
+    --accent: #FF9500;             /* 活力橙黄 - 次强调、点缀 */
+    --accent2: #FFEB3B;            /* 亮黄 - 渐变高光 */
 
-    /* 文字 - 清晰活力 */
+    /* 文字 */
     --text-primary: #222222;
     --text-secondary: #555555;
     --text-inverse: #FFFFFF;
 
     /* 背景 - 明亮快乐氛围 */
-    --bg-main: #FFFFFF;
-    --bg-secondary: #FFF5F8;
+    --bg-main: #FFF5FA;           /* 主背景：极浅活力粉，与菜单完美衔接，无任何白条 */
+    --bg-secondary: #FFF8FB;       /* 次背景：更浅粉 */
     --card-bg: #FFFFFF;
-    /* 关键调整：主菜单背景不透明度提升至 80%（opacity 0.8 → rgba 颜色直接控制） */
-    --navbar-bg: rgba(255, 255, 255, 0.8); /* 默认白底 80% 不透明，滚动前轻透可见背景 */
+    --navbar-bg: #FF6B9D;          /* 主菜单：明亮轻快粉红实色块（不再深沉） */
     --footer-bg: #1A1A1A;
-    --hero-overlay: linear-gradient(135deg, rgba(255, 46, 99, 0.4), rgba(255, 149, 0, 0.3));
 
-    /* 边框与分割 - 轻快不沉重 */
-    --border: #FFD0D0;
-    --divider: #FFE0E0;
+    /* Hero 叠加层 - 活力粉橙渐变，更热烈明亮 */
+    --hero-overlay: linear-gradient(135deg, rgba(255, 107, 157, 0.5), rgba(255, 149, 0, 0.35));
 
-    /* 阴影 - 活力跳跃感 */
-    --shadow: 0 12px 30px rgba(255, 46, 99, 0.15);
-    --shadow-md: 0 6px 15px rgba(255, 149, 0, 0.12);
-    --shadow-hover: 0 25px 50px rgba(255, 46, 99, 0.25);
+    /* 边框与分割 */
+    --border: #FFD0E0;
+    --divider: #FFE5EE;
 
-    /* 悬停与交互 - 爆棚快乐过渡 */
-    --hover-bg: rgba(255, 46, 99, 0.2);
-    --hover-text: #FF2E63;
+    /* 阴影 - 轻快跳跃 */
+    --shadow: 0 12px 35px rgba(255, 107, 157, 0.18);
+    --shadow-md: 0 6px 18px rgba(255, 107, 157, 0.12);
+    --shadow-hover: 0 25px 55px rgba(255, 107, 157, 0.28);
 
-    /* 状态色 - 多巴胺彩虹延伸 */
+    /* 交互 */
+    --hover-bg: rgba(255, 255, 255, 0.4);
+    --hover-text: #FFFFFF;
+
+    /* 状态色 */
     --success: #00D4A1;
     --warning: #FF9500;
     --error: #FF3B30;
 
-    /* 渐变 - 多巴胺核心：彩虹活力渐变 */
-    --gradient-primary: linear-gradient(135deg, #FF2E63, #FF9500, #FFEB3B);
-    --gradient-card: linear-gradient(to bottom, #FFFFFF, #FFF0F5);
-    --gradient-navbar: linear-gradient(to right, rgba(255, 46, 99, 0.25), rgba(255, 149, 0, 0.2)); /* 渐变层也相应加深 */
+    /* 渐变 */
+    --gradient-primary: linear-gradient(135deg, #FF6B9D, #FF9500, #FFEB3B); /* 按钮彩虹渐变 */
+    --gradient-navbar: linear-gradient(to right, #FF6B9D, #FF8AB4);         /* 菜单浅粉渐变，轻快不重 */
+    --gradient-card: linear-gradient(to bottom, #FFFFFF, #FFF8FB);
 }
 
-/* 主题特有强化 - 主菜单透明度调整 */
+/* 主题特有强化 */
+body {
+    background: linear-gradient(135deg,
+        #FFF0F5 0%,    /* 极浅樱花粉 */
+        #FFFBF0 18%,   /* 极浅橙光 */
+        #FFFBE0 36%,   /* 极浅柠檬黄 */
+        #F0FFF8 54%,   /* 极浅薄荷清新 */
+        #F5F0FF 72%,   /* 极浅薰衣草紫 */
+        #FFF5FA 100%   /* 回归你原有的极浅活力粉 */
+    ) !important;
+    background-attachment: fixed; /* 背景固定，滚动时不动，更有沉浸感 */
+    min-height: 100vh; /* 确保全屏覆盖 */
+}
+
+
 .navbar {
-    background: var(--navbar-bg) !important; /* 白底 80% 不透明 */
-    background-image: var(--gradient-navbar) !important; /* 彩虹渐变层加深，活力感更实 */
-    border-bottom: 3px solid var(--primary-light);
+    background: var(--navbar-bg) !important;
+    background-image: var(--gradient-navbar) !important;
+    border-bottom: 4px solid #FF8AB4;       /* 浅粉边线，更柔和 */
     box-shadow: var(--shadow-md);
     transition: all 0.4s ease;
-    backdrop-filter: blur(10px); /* 新增：磨砂玻璃效果，提升 80% 不透明时的质感与现代感 */
 }
 
 .navbar.scrolled {
-    background: rgba(255, 255, 255, 0.95) !important; /* 滚动后接近完全不透明，更稳重 */
-    background-image: var(--gradient-primary) !important;
+    background-image: linear-gradient(to right, #FF4D8A, #FF7AA2) !important; /* 滚动后稍深但仍明亮 */
     box-shadow: var(--shadow-hover);
-    backdrop-filter: blur(12px);
 }
 
-/* 其余保持不变（保持之前优化） */
+/* 主菜单文字 - 白字高对比 */
 .navbar-brand {
-    color: var(--primary) !important;
-    font-weight: 900;
+    color: #FFFFFF !important;
+    font-weight: 800;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .nav-link {
-    color: var(--text-primary) !important;
+    color: #FFFFFF !important;
     font-weight: 600;
+    opacity: 0.94;
     transition: all 0.3s ease;
 }
 
 .nav-link:hover {
-    color: var(--hover-text) !important;
+    color: #FFFFFF !important;
     background-color: var(--hover-bg) !important;
+    opacity: 1;
     border-radius: 30px;
-    transform: scale(1.1);
+    transform: scale(1.08);
 }
 
-.card, .product-card {
-    background-image: var(--gradient-card);
-    border-radius: 20px;
-    border: 1px solid var(--primary-light);
-    overflow: hidden;
-}
-
-.btn-primary {
-    border-radius: 50px;
+/* 活力彩虹按钮 */
+.btn-primary,
+.btn-outline-dark {
+    background-image: var(--gradient-primary) !important;
+    background-color: transparent;
+    border: none !important;
+    color: #FFFFFF !important;
     font-weight: 700;
+    border-radius: 50px;
     padding: 1rem 3rem;
-    background-image: var(--gradient-primary);
     box-shadow: var(--shadow-md);
+    transition: all 0.4s ease;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
-.btn-primary:hover {
-    transform: scale(1.05);
+.btn-primary:hover,
+.btn-outline-dark:hover {
+    background-image: linear-gradient(135deg, #FF4D8A, #FF9500, #FFA000) !important;
+    transform: scale(1.06);
     box-shadow: var(--shadow-hover);
 }
 
+.btn-outline-dark {
+    background-image: var(--gradient-primary) !important;
+}
+
+/* 卡片 */
+.card, .product-card {
+    background: var(--card-bg);
+    background-image: var(--gradient-card);
+    border-radius: 28px;
+    border: none;
+    box-shadow: var(--shadow);
+}
+
+.product-card:hover {
+    transform: translateY(-18px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* Hero 区 - 明亮活力风格 */
 .hero-section {
     color: var(--text-inverse) !important;
 }
@@ -113,8 +150,8 @@
 .hero-content .display-4 {
     color: #FFFFFF !important;
     text-shadow:
-        0 0 15px rgba(255, 46, 99, 0.6),
-        0 4px 12px rgba(0, 0, 0, 0.7);
+        0 0 20px rgba(255, 107, 157, 0.7),
+        0 4px 12px rgba(0, 0, 0, 0.6);
     font-weight: 900;
     letter-spacing: -1px;
 }
@@ -122,15 +159,12 @@
 .hero-content p,
 .hero-content .lead {
     color: rgba(255, 255, 255, 0.95) !important;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
 }
 
-.product-card:hover {
-    transform: translateY(-20px) scale(1.03);
-    box-shadow: var(--shadow-hover);
-}
-
+/* 页脚 */
 footer {
-    background: var(--footer-bg);
+    background: var(--footer-bg) !important;
+    background-image: linear-gradient(to bottom, #1A1A1A, #000000);
     color: #DDDDDD;
 }

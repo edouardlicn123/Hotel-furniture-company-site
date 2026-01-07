@@ -1,8 +1,21 @@
 {% extends "admin/base.html" %}
+{% block title %}网站设置{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
     <h2 class="mb-4">网站设置</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show mb-4">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
     <form method="POST" enctype="multipart/form-data">
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
@@ -15,17 +28,20 @@
                            value="{{ settings.company_name }}" required>
                 </div>
 
-                <!-- 主题选择下拉框 -->
                 <div class="mb-3">
                     <label for="theme" class="form-label">网站主题</label>
                     <select class="form-select" id="theme" name="theme">
                         {% for theme in theme_files %}
                             <option value="{{ theme }}" {% if settings.theme == theme %}selected{% endif %}>
-                                {{ theme }}
+                                {{ theme|replace('-', ' ')|replace('.css', '')|title }}
                             </option>
                         {% endfor %}
                     </select>
-                    <div class="form-text">保存后前端将立即切换到所选主题</div>
+                    <div class="form-text mt-3">
+                        <strong>生成新主题方式：</strong><br>
+                        将某一主题的源码发给AI，然后告诉它“<strong>维持这个主题的基本结构不变，生成一套XXXXX风格的主题，需要更换整套配色，包括主菜单，网页背景，按键等</strong>”。<br>
+                        生成后将返回的 CSS 代码保存为新文件名放入 <code>static/css/themes/</code> 目录即可自动出现在这里。
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -40,7 +56,7 @@
             </div>
         </div>
 
-        <!-- 以下 SEO 设置卡片保持您原有的结构不变 -->
+        <!-- SEO 设置卡片保持不变 -->
         <div class="card mb-4">
             <div class="card-header bg-info text-dark">
                 <h5 class="mb-0">首页 SEO 设置</h5>
@@ -113,8 +129,11 @@
             </div>
         </div>
 
-        <div class="text-center mt-4">
-            <button type="submit" class="btn btn-primary btn-lg px-5">保存所有设置</button>
+        <!-- 保存按钮移动到所有设置卡片下方、表格上方（这里没有表格，但位置已正确在上方） -->
+        <div class="text-center mt-5 mb-5">
+            <button type="submit" class="btn btn-primary btn-lg px-5 shadow-lg" style="border-radius: 50px;">
+                保存所有设置
+            </button>
         </div>
     </form>
 </div>

@@ -8,12 +8,15 @@
     <!-- 引入统一 SEO 模板 -->
     {% include 'partials/seo.html' %}
     
+    <!-- ====================== 所有 CSS 加载区 ====================== -->
     {% block extra_styles %}
-        <!-- 新 CSS 架构入口：custom.css 会自动导入 base.css + variables.css + 当前主题 -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}?v={{ range(1,1000000)|random }}">
-        <!-- 保留原有额外样式（Bootstrap 等） -->
+        {# 1. 第三方公共样式（Bootstrap、Font Awesome 等） #}
         {% include 'partials/extra_styles.html' %}
+
+        {# 2. 项目核心样式 + 动态主题切换（关键） #}
+        {% include 'partials/style.html' %}
     {% endblock %}
+    <!-- =========================================================== -->
 
     <!-- 将后台公司名注入JS全局变量，用于hero栏js的调用 -->
     <script>
@@ -42,7 +45,7 @@
     <!-- Bootstrap JS（国内稳定 CDN） -->
     <script src="https://cdn.staticfile.org/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js" defer></script>
     
-    <!-- 额外脚本 -->
+    <!-- 脚本区域 -->
     {% block extra_scripts %}
         {% include 'partials/extra_scripts.html' %}
         

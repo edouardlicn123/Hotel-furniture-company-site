@@ -1,13 +1,15 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+# app/routes/admin.py
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, login_user, logout_user, current_user
 from app.models import Product, Category, User, Settings
 from app import db
-from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from PIL import Image
 
 admin_bp = Blueprint('admin', __name__, template_folder='templates/admin')
+
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -21,6 +23,7 @@ def login():
         flash('用户名或密码错误', 'danger')
     return render_template('admin/login.html')
 
+
 @admin_bp.route('/logout')
 @login_required
 def logout():
@@ -28,10 +31,12 @@ def logout():
     flash('已退出登录', 'info')
     return redirect(url_for('admin.login'))
 
+
 @admin_bp.route('/')
 @login_required
 def index():
     return render_template('admin/index.html')
+
 
 @admin_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -42,28 +47,40 @@ def settings():
         db.session.add(settings)
         db.session.commit()
 
-    # 自动读取 themes 目录下的所有主题文件
+    # ==================== 自动读取 themes 目录下的主题文件 ====================
     themes_dir = os.path.join(current_app.root_path, 'static', 'css', 'themes')
+    theme_files = []
+
     try:
-        theme_files = [
-            f[:-4] for f in os.listdir(themes_dir)
-            if f.endswith('.css') and f != 'variables.css'
-        ]
-        theme_files.sort()
-    except Exception:
+        if os.path.exists(themes_dir) and os.path.isdir(themes_dir):
+            for f in os.listdir(themes_dir):
+                if f.endswith('.css') and f != 'variables.css':
+                    theme_name = f[:-4]  # 去掉 .css 后缀
+                    theme_files.append(theme_name)
+            theme_files.sort()  # 按字母排序
+        else:
+            theme_files = ['default']
+    except Exception as e:
+        current_app.logger.error(f"读取主题目录失败: {e}")
         theme_files = ['default']
+
+    # 如果当前保存的主题已不存在，回退到 default
+    if settings.theme and settings.theme not in theme_files:
+        settings.theme = 'default'
+
+    # ==========================================================================
 
     if request.method == 'POST':
         settings.company_name = request.form.get('company_name', '').strip()
 
-        # 主题选择
+        # 主题选择安全校验
         selected_theme = request.form.get('theme')
         if selected_theme in theme_files:
             settings.theme = selected_theme
         else:
             settings.theme = 'default'
 
-        # SEO 字段
+        # SEO 字段保存
         settings.seo_home_title = request.form.get('seo_home_title', '')
         settings.seo_home_description = request.form.get('seo_home_description', '')
         settings.seo_home_keywords = request.form.get('seo_home_keywords', '')
@@ -75,16 +92,14 @@ def settings():
         settings.seo_contact_title = request.form.get('seo_contact_title', '')
         settings.seo_contact_description = request.form.get('seo_contact_description', '')
 
-        # Logo 上传（保持原有逻辑）
+        # Logo 上传处理
         logo_file = request.files.get('logo')
         if logo_file and logo_file.filename != '':
             upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'logo')
             os.makedirs(upload_folder, exist_ok=True)
-
             ext = logo_file.filename.rsplit('.', 1)[-1].lower() if '.' in logo_file.filename else 'png'
             temp_path = os.path.join(upload_folder, f'temp_company_logo.{ext}')
             logo_file.save(temp_path)
-
             try:
                 with Image.open(temp_path) as img:
                     if img.width > 600 or img.height > 300:
@@ -103,28 +118,31 @@ def settings():
                 flash(f'图片处理失败：{str(e)}', 'danger')
 
         db.session.commit()
-        flash('所有设置保存成功！主题已更新。', 'success')
+        flash('所有设置保存成功！主题已更新（刷新前端页面即可看到新主题）。', 'success')
         return redirect(url_for('admin.settings'))
 
-    return render_template('admin/settings.html', settings=settings, theme_files=theme_files)
+    return render_template('admin/settings.html',
+                           settings=settings,
+                           theme_files=theme_files)
 
-# 以下产品管理路由保持不变（直接复制原文件对应部分即可）
+
 @admin_bp.route('/products')
 @login_required
 def product_list():
     products = Product.query.all()
     return render_template('admin/product_list.html', products=products)
 
+
 @admin_bp.route('/products/add', methods=['GET', 'POST'])
 @login_required
 def product_add():
     categories = Category.query.all()
-    
+
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description')
         category_id = request.form.get('category_id')
-        
+
         length = request.form.get('length')
         width = request.form.get('width')
         height = request.form.get('height')
@@ -133,22 +151,22 @@ def product_add():
         surface_material = request.form.get('surface_material')
         applicable_space = request.form.get('applicable_space')
         featured_series = request.form.get('featured_series')
-        
+
         upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'products')
         os.makedirs(upload_folder, exist_ok=True)
-        
+
         photos_list = []
         image_files = request.files.getlist('photos')
-        
+
         for file in image_files[:10]:
             if file and file.filename != '':
                 filename = file.filename
                 file.save(os.path.join(upload_folder, filename))
                 photos_list.append(filename)
-        
+
         photos_str = ','.join(photos_list) if photos_list else None
         main_image = photos_list[0] if photos_list else None
-        
+
         new_product = Product(
             name=name,
             description=description,
@@ -168,8 +186,9 @@ def product_add():
         db.session.commit()
         flash(f'产品添加成功！已上传 {len(photos_list)} 张图片', 'success')
         return redirect(url_for('admin.product_list'))
-    
+
     return render_template('admin/product_add.html', categories=categories)
+
 
 @admin_bp.route('/change_password', methods=['GET', 'POST'])
 @login_required

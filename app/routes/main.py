@@ -3,22 +3,28 @@ from app.models import Settings
 
 main_bp = Blueprint('main', __name__)
 
-# ====================== 删除原装饰器 ======================
-# 原代码：@main_bp.context_processor
-# 现在移到 __init__.py 中作为 app.context_processor
+# ====================== 全局上下文处理器（已提升到 app 级别） ======================
+# 注意：实际代码已移到 __init__.py，但这里保留完整逻辑供参考
 def inject_seo_data():
     settings = Settings.query.first()
     if not settings:
-        # 默认值（防止数据库为空）
+        # 数据库为空时的默认值
         company_name = 'XX Hotel Furniture Manufacturer'
         current_title = 'Home - Premium Hotel Furniture | XX Hotel Furniture Manufacturer'
         current_description = 'Professional hotel furniture manufacturer specializing in luxury beds, sofas, wardrobes and custom solutions for 5-star hotels worldwide.'
         current_keywords = 'hotel furniture, luxury hotel beds, hotel sofas, custom hospitality furniture, hotel room furniture'
         company_logo_url = None
+        theme = 'default'  # 默认主题
     else:
         company_name = settings.company_name
         
-        # 根据当前路由选择 SEO 配置（优化判断逻辑，支持更多页面）
+        # Logo URL
+        company_logo_url = url_for('static', filename='uploads/logo/company_logo') if settings.logo else None
+        
+        # 关键：注入当前主题
+        theme = settings.theme or 'default'
+
+        # 根据当前路由选择 SEO 配置
         endpoint = request.endpoint or ''
 
         if endpoint == 'main.index':
@@ -27,13 +33,11 @@ def inject_seo_data():
             current_keywords = settings.seo_home_keywords or 'hotel furniture, luxury hotel beds, hotel sofas, custom hospitality furniture, hotel room furniture'
         
         elif 'products.product_detail' in endpoint:
-            # 产品详情页（新增分支，保持与模板一致）
             current_title = f'Product Detail - {company_name}'
             current_description = settings.seo_products_description or 'Explore our complete collection of premium hotel furniture...'
             current_keywords = settings.seo_products_keywords or 'hotel furniture products, hotel beds, hotel sofas, hotel wardrobes'
         
         elif 'products.' in endpoint:
-            # 产品列表页
             current_title = (settings.seo_products_title or 'Products | {company_name}').format(company_name=company_name)
             current_description = settings.seo_products_description or 'Explore our complete collection of premium hotel furniture including beds, nightstands, sofas, wardrobes and custom case goods for luxury hospitality projects.'
             current_keywords = settings.seo_products_keywords or 'hotel furniture products, hotel beds, hotel sofas, hotel wardrobes, luxury hotel furniture collection'
@@ -53,17 +57,15 @@ def inject_seo_data():
             current_description = 'Premium hotel furniture solutions for luxury hospitality.'
             current_keywords = 'hotel furniture, custom hotel furniture'
 
-        # Logo URL（所有页面统一逻辑）
-        company_logo_url = url_for('static', filename='uploads/logo/company_logo') if settings.logo else None
-
     return dict(
         company_name=company_name,
         page_title=current_title,
         page_description=current_description,
         page_keywords=current_keywords,
-        company_logo_url=company_logo_url
+        company_logo_url=company_logo_url,
+        theme=theme  # ← 关键：注入 theme 变量供前端使用
     )
-# ============================================================
+# ============================================================================
 
 @main_bp.route('/')
 def index():
