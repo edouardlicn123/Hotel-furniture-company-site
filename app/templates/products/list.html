@@ -1,13 +1,7 @@
 {% extends "base.html" %}
 
 {% block hero_section %}
-<section class="hero-section" style="background-image: url('{{ url_for('static', filename='uploads/products_hero.jpg') }}'); height: 22.5vh; min-height: 200px;">
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-        <h1 class="display-5 fw-bold">Our Products</h1>
-        <p class="lead mb-0">Premium Hotel Furniture Collection</p>
-    </div>
-</section>
+    {% include 'partials/hero_small.html' %}
 {% endblock %}
 
 {% block content %}

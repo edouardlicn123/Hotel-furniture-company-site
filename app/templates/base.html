@@ -10,18 +10,23 @@
     
     {% block extra_styles %}
         <!-- 新 CSS 架构入口：custom.css 会自动导入 base.css + variables.css + 当前主题 -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}?v={{ range(1,1000000)|random }}">
-        
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}?v={{ config.CURRENT_TIME|default('1') }}">
         <!-- 保留原有额外样式（Bootstrap 等） -->
         {% include 'partials/extra_styles.html' %}
     {% endblock %}
+
+    <!-- 将后台公司名注入JS全局变量，用于hero栏js的调用 -->
+    <script>
+        window.COMPANY_NAME = "{{ company_name }}";
+    </script>
+
 </head>
 
 <body>
     <!-- 前端导航菜单（动态公司名） -->
     {% include 'partials/navbar.html' %}
 
-    <!-- 可选英雄区（首页等使用） -->
+    <!-- 可选英雄区（首页使用 hero_large，其他页面使用 hero_small） -->
     {% block hero_section %}{% endblock %}
 
     <!-- 主体内容 -->
@@ -40,6 +45,9 @@
     <!-- 额外脚本 -->
     {% block extra_scripts %}
         {% include 'partials/extra_scripts.html' %}
+        
+        <!-- 全局统一 Hero 内容控制脚本 -->
+        <script src="{{ url_for('static', filename='js/hero-config.js') }}" defer></script>
     {% endblock %}
 </body>
 </html>

@@ -12,6 +12,8 @@ login_manager.login_message_category = 'warning'
 
 def create_app():
     app = Flask(__name__)
+    import time
+    app.config['CURRENT_TIME'] = int(time.time())  # 每次启动服务器都会变
     app.config['SECRET_KEY'] = 'your-very-secret-key-change-me'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -27,7 +29,7 @@ def create_app():
         return User.query.get(int(user_id))
 
     # 注册蓝图
-    from app.routes.main import main_bp
+    from app.routes.main import main_bp, inject_seo_data
     from app.routes.products import products_bp
     from app.routes.featured import featured_bp
     from app.routes.admin import admin_bp
@@ -36,5 +38,11 @@ def create_app():
     app.register_blueprint(products_bp, url_prefix='/products')
     app.register_blueprint(featured_bp, url_prefix='/featured')
     app.register_blueprint(admin_bp, url_prefix='/admin')
+
+    # ====================== 新增：全局上下文处理器 ======================
+    # 原来只在 main_bp 下，现在提升到 app 级别，所有页面（包括 products、featured）都能访问
+    # company_name、page_title、company_logo_url 等变量
+    app.context_processor(inject_seo_data)
+    # ====================================================================
 
     return app

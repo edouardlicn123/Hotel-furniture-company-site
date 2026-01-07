@@ -3,7 +3,7 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
-# 默认要包含的文件扩展名
+# 默认要包含的文件扩展名（根据当前项目进度优化，聚焦核心代码和配置）
 INCLUDE_EXTENSIONS = {
     '.py', '.js', '.ts', '.jsx', '.tsx', '.html', '.css', '.scss', '.json',
     '.yaml', '.yml', '.md', '.txt', '.toml', '.ini', '.cfg', '.env.example',
@@ -11,15 +11,16 @@ INCLUDE_EXTENSIONS = {
     '.c', '.cpp', '.h', '.php', '.rb', '.swift', '.kt'
 }
 
-# 默认要排除的目录和文件
+# 默认要排除的目录和文件（增强排除，避免无关或敏感内容）
 EXCLUDE_DIRS = {
     '__pycache__', '.git', '.svn', '.hg', '.idea', '.vscode', 'node_modules',
     '.venv', 'venv', 'env', '.env', 'dist', 'build', 'target', '.next',
-    '.gradle', '.cache', '.pytest_cache', '.mypy_cache', 'coverage', 'code2ai'
+    '.gradle', '.cache', '.pytest_cache', '.mypy_cache', 'coverage', 'code2ai',
+    '.github', 'docs', 'examples'  # 新增：排除 GitHub workflows、docs、examples 等非核心代码目录
 }
 
 EXCLUDE_FILES = {
-    '.gitignore', '.DS_Store', 'Thumbs.db'
+    '.gitignore', '.DS_Store', 'Thumbs.db', 'project_review_*.txt'  # 新增：排除生成的 review 文件
 }
 
 DB_EXTENSIONS = {'.sqlite', '.sqlite3', '.db', '.mdb'}
@@ -42,15 +43,18 @@ def should_exclude(path: Path) -> bool:
     if path.name.endswith('~') or path.name.startswith('.#'):
         return True
 
-    # 关键增强：如果路径的任何部分包含 code2ai 文件夹，则彻底排除
-    # 防止 code2ai 目录下的任何文件被意外收集（即使未来改名或嵌套）
+    # 关键增强：彻底排除 code2ai 目录及其任何子内容
     if 'code2ai' in path.parts:
+        return True
+
+    # 新增：排除 .polygon 等测试或缓存目录（根据当前项目结构）
+    if path.name.startswith('.polygon'):
         return True
 
     return False
 
 def should_include(path: Path) -> bool:
-    """判断文件是否应该被包含"""
+    """判断文件是否应该被包含（聚焦核心代码）"""
     return path.suffix.lower() in INCLUDE_EXTENSIONS or path.name.lower() == 'dockerfile'
 
 def collect_files(root_dir: Path):
@@ -98,7 +102,7 @@ def generate_output_path(root: Path, user_output: str) -> Path:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="将项目文件整合为单个 txt 文件，供 AI 审查使用（已排除 code2ai 目录）"
+        description="将项目文件整合为单个 txt 文件，供 AI 审查使用（已优化监控范围，聚焦核心代码）"
     )
     parser.add_argument(
         "project_dir",
@@ -128,11 +132,11 @@ def main():
     # 生成输出路径
     output_path = generate_output_path(root, args.output)
 
-    # 收集文件（此时 code2ai 目录一定不会被遍历进去）
+    # 收集文件
     files = collect_files(root)
 
     print(f"正在处理项目目录：{root}")
-    print(f"找到 {len(files)} 个待包含的文件")
+    print(f"找到 {len(files)} 个待包含的文件（已优化排除非核心内容）")
     print(f"将写入：{output_path}\n")
 
     skipped = 0
