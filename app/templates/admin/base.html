@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- 浏览器标题 -->
+    <title>{% block title %}后台管理 - XX生产商{% endblock %}</title>
+    
+    <!-- 样式（同前端） -->
+    {% block extra_styles %}
+        {% include 'partials/extra_styles.html' %}
+    {% endblock %}
+</head>
+<body>
+    <!-- 后台专用菜单模板 -->
+    {% include 'partials/admin_navbar.html' %}
+
+    <!-- 英雄区（可选） -->
+    {% block hero_section %}{% endblock %}
+
+    <!-- 主体内容 -->
+    <main class="container my-5">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 页脚（同前端） -->
+    {% block footer %}
+        {% include 'partials/footer.html' %}
+    {% endblock %}
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js" defer></script>
+    
+    <!-- 额外脚本 -->
+    {% block extra_scripts %}
+        {% include 'partials/extra_scripts.html' %}
+    {% endblock %}
+</body>
+</html>

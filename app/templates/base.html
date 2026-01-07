@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- 引入统一 SEO 模板 -->
+    {% include 'partials/seo.html' %}
+    
+    {% block extra_styles %}
+        {% include 'partials/extra_styles.html' %}
+    {% endblock %}
+</head>
+
+<body>
+    <!-- 前端导航菜单（动态公司名） -->
+    {% include 'partials/navbar.html' %}
+
+    <!-- 可选英雄区（首页等使用） -->
+    {% block hero_section %}{% endblock %}
+
+    <!-- 主体内容 -->
+    <main class="container my-5">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 页脚（动态公司名） -->
+    {% block footer %}
+        {% include 'partials/footer.html' %}
+    {% endblock %}
+
+    <!-- Bootstrap JS（国内稳定 CDN） -->
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js" defer></script>
+    
+    <!-- 额外脚本 -->
+    {% block extra_scripts %}
+        {% include 'partials/extra_scripts.html' %}
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,129 @@
+{% extends "admin/base.html" %}
+
+{% block title %}网站设置{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <h2 class="section-title mb-4">网站与SEO设置</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mb-4">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <!-- 基本信息 -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">基本信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="company_name" class="form-label fw-bold">公司名称</label>
+                        <input type="text" class="form-control form-control-lg" id="company_name" name="company_name"
+                               value="{{ settings.company_name }}" required>
+                        <div class="form-text">将显示在导航栏、页脚及SEO标题中</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="theme" class="form-label fw-bold">网站主题</label>
+                        <select class="form-select form-select-lg" id="theme" name="theme">
+                            <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>浅色主题</option>
+                            <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>深色主题</option>
+                            <option value="blue" {% if settings.theme == 'blue' %}selected{% endif %}>蓝色主题</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 首页SEO -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">首页SEO设置</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="seo_home_title" class="form-label">页面标题（Title）</label>
+                        <input type="text" class="form-control" id="seo_home_title" name="seo_home_title"
+                               value="{{ settings.seo_home_title }}">
+                        <div class="form-text">可使用 {company_name} 占位符，例如：首页 - {company_name}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_home_description" class="form-label">元描述（Meta Description）</label>
+                        <textarea class="form-control" id="seo_home_description" name="seo_home_description" rows="3">{{ settings.seo_home_description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_home_keywords" class="form-label">关键词（Meta Keywords）</label>
+                        <input type="text" class="form-control" id="seo_home_keywords" name="seo_home_keywords"
+                               value="{{ settings.seo_home_keywords }}">
+                        <div class="form-text">用逗号分隔多个关键词</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 产品页SEO -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">产品页SEO设置</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="seo_products_title" class="form-label">页面标题（Title）</label>
+                        <input type="text" class="form-control" id="seo_products_title" name="seo_products_title"
+                               value="{{ settings.seo_products_title }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_products_description" class="form-label">元描述（Meta Description）</label>
+                        <textarea class="form-control" id="seo_products_description" name="seo_products_description" rows="3">{{ settings.seo_products_description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_products_keywords" class="form-label">关键词（Meta Keywords）</label>
+                        <input type="text" class="form-control" id="seo_products_keywords" name="seo_products_keywords"
+                               value="{{ settings.seo_products_keywords }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 关于我们 & 联系我们 SEO -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">关于我们 & 联系我们 SEO设置</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="seo_about_title" class="form-label">关于我们标题</label>
+                            <input type="text" class="form-control" id="seo_about_title" name="seo_about_title"
+                                   value="{{ settings.seo_about_title }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="seo_contact_title" class="form-label">联系我们标题</label>
+                            <input type="text" class="form-control" id="seo_contact_title" name="seo_contact_title"
+                                   value="{{ settings.seo_contact_title }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_about_description" class="form-label">关于我们描述</label>
+                        <textarea class="form-control" id="seo_about_description" name="seo_about_description" rows="3">{{ settings.seo_about_description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="seo_contact_description" class="form-label">联系我们描述</label>
+                        <textarea class="form-control" id="seo_contact_description" name="seo_contact_description" rows="3">{{ settings.seo_contact_description }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg px-5">保存所有设置</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
