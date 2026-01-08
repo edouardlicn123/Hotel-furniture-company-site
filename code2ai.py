@@ -5,6 +5,7 @@ from datetime import datetime
 
 # 根据当前项目开发进度（2026年1月）优化监控范围
 # 聚焦：后端 Flask、静态资源、主题 CSS、模板、配置、脚本、数据库迁移等核心代码
+# 明确排除所有图片文件（包括 products 目录下的展示图），仅保留源码
 INCLUDE_EXTENSIONS = {
     '.py',          # Flask 后端、脚本、工具
     '.html',        # Jinja2 模板
@@ -33,7 +34,6 @@ EXCLUDE_DIRS = {
     'code2ai',                              # 生成的审查输出目录（避免自引用）
     '.github',                              # workflows（非核心业务代码）
     'docs', 'examples',                     # 文档和示例（非项目主体）
-    'static/uploads',                       # 用户上传文件（可能敏感或过大）
     'instance',                             # Flask 默认 SQLite 数据库目录
     'migrations/versions',                  # Alembic 迁移版本（可从 migrations/env.py 推导，通常不需重复）
 }
@@ -45,6 +45,9 @@ EXCLUDE_FILES = {
 }
 
 DB_EXTENSIONS = {'.sqlite', '.sqlite3', '.db', '.mdb'}
+
+# 明确排除所有图片格式（包括预数据图片）
+IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp', '.bmp', '.tiff'}
 
 def should_exclude(path: Path) -> bool:
     """
@@ -68,28 +71,37 @@ def should_exclude(path: Path) -> bool:
     if 'code2ai' in path.parts:
         return True
 
-    # 排除大型二进制或媒体文件（避免体积爆炸）
-    if path.suffix.lower() in {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff2', '.ttf'}:
+    # 排除所有图片文件（包括 static/uploads/products/ 下的产品展示图）
+    if path.suffix.lower() in IMAGE_EXTENSIONS:
         return True
 
-    # 排除用户上传目录下的任何文件（隐私与体积考虑）
+    # 排除字体、二进制图标等（非核心展示资源）
+    if path.suffix.lower() in {'.woff2', '.ttf'}:
+        return True
+
+    # 排除 uploads 目录下所有内容（logo、products 等）
     if 'static/uploads' in path.parts:
         return True
 
     return False
+
 
 def should_include(path: Path) -> bool:
     """判断文件是否应该被包含（严格聚焦核心源码）"""
     # 明确扩展名匹配
     if path.suffix.lower() in INCLUDE_EXTENSIONS:
         return True
+
     # Dockerfile 无扩展名特殊处理
     if path.name.lower() == 'dockerfile':
         return True
-    # 特别包含 themes 目录下的所有 .css（即使不在默认扩展名中）
+
+    # 特别包含 themes 目录下的所有 .css
     if path.suffix.lower() == '.css' and 'themes' in path.parts:
         return True
+
     return False
+
 
 def collect_files(root_dir: Path):
     files = []
@@ -110,6 +122,7 @@ def collect_files(root_dir: Path):
 
     return sorted(files)
 
+
 def generate_output_path(root: Path, user_output: str) -> Path:
     """
     生成输出路径。
@@ -127,9 +140,10 @@ def generate_output_path(root: Path, user_output: str) -> Path:
     output.parent.mkdir(parents=True, exist_ok=True)
     return output
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description="将项目核心源码整合为单个 txt 文件，供 AI 审查使用（2026-01 更新版：更精准聚焦 Flask + 主题 + 配置）"
+        description="将项目核心源码整合为单个 txt 文件，供 AI 审查使用（2026-01 更新版：完全排除所有图片文件）"
     )
     parser.add_argument(
         "project_dir",
@@ -145,7 +159,7 @@ def main():
     parser.add_argument(
         "--max-size",
         type=int,
-        default=800_000,  # 提升至 800KB，适应更大主题文件
+        default=800_000,  # 恢复为 800KB（不再包含图片，文件更小）
         help="单个文件最大字节数，超过则跳过（默认 800KB）"
     )
 
@@ -160,7 +174,7 @@ def main():
     files = collect_files(root)
 
     print(f"正在扫描项目：{root}")
-    print(f"找到 {len(files)} 个核心文件（已严格排除二进制、上传、生成物等）")
+    print(f"找到 {len(files)} 个核心源码文件（已完全排除所有图片、二进制、上传文件等）")
     print(f"输出文件：{output_path}\n")
 
     skipped = 0
@@ -185,7 +199,7 @@ def main():
                 outfile.write(f"### 文件: {rel_path}\n")
                 outfile.write(f"# 大小: {size} 字节\n")
                 outfile.write("```\n")
-                outfile.write(content.rstrip() + "\n")  # 统一结尾换行
+                outfile.write(content.rstrip() + "\n")
                 outfile.write("```\n")
                 outfile.write("\n" + "-" * 80 + "\n\n")
 
@@ -199,6 +213,7 @@ def main():
     if skipped:
         print(f"   跳过 {skipped} 个文件（超大或异常）")
     print(f"   总大小：{total_mb:.2f} MB")
+
 
 if __name__ == "__main__":
     main()

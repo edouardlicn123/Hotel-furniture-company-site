@@ -1,4 +1,4 @@
-/* base.css - 基础结构与通用组件（完整最新版：Logo 等比例占据导航栏高度90% + 所有优化整合） */
+/* base.css - 基础结构与通用组件（完整最新版：产品卡片图片背景恢复白色 + 所有优化整合） */
 
 body {
     font-family: "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -100,7 +100,7 @@ body {
     background-color: var(--navbar-bg) !important;
     border-bottom: 1px solid var(--border);
     padding: 0.8rem 0;
-    height: 90px;                        /* 固定高度，便于 Logo 百分比计算 */
+    height: 90px;
     align-items: center;
     transition: all 0.3s ease;
     position: fixed !important;
@@ -113,15 +113,15 @@ body {
 
 .navbar.scrolled {
     padding: 0.6rem 0;
-    height: 80px;                        /* 滚动后略压缩高度 */
+    height: 80px;
     box-shadow: var(--shadow-md);
 }
 
 /* Logo 优化：等比例占据导航栏高度的 90% */
 #navbar-logo {
-    height: 80px;                         /* 占据当前导航栏高度的 90% */
+    height: 80px;
     width: auto;
-    max-width: 100%;                     /* 防止过宽 */
+    max-width: 100%;
     object-fit: contain;
     transition: all 0.3s ease;
 }
@@ -207,7 +207,7 @@ body {
     margin-top: 40px;
 }
 
-/* === 产品卡片（高度已降低为原约 2/3，高端规格卡风格） === */
+/* === 产品卡片：垂直 Flex 布局，确保文字始终在底部 === */
 .product-card {
     background: var(--card-bg) !important;
     background-image: var(--gradient-card);
@@ -226,73 +226,55 @@ body {
     box-shadow: var(--shadow-hover-lg);
 }
 
-/* 图片区（高度降低为原 2/3） */
-.product-card-img {
+/* 图片包装器：固定高度 + 白色背景 + 内边距 */
+.product-card-img-wrapper {
     height: 160px;
-    object-fit: cover;
-    width: 100%;
+    background-color: #fff; /* 恢复为白色背景 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+/* 图片：完整显示模式（不裁剪，等比缩放） */
+.product-card-img-complete {
+    max-height: 100%;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
     transition: transform 0.8s ease;
 }
 
-.product-card:hover .product-card-img {
+.product-card:hover .product-card-img-complete {
     transform: scale(1.06);
 }
 
-/* 信息区（内边距与字体缩小） */
+/* 文字信息区：推到卡片底部 */
 .product-card-body {
-    padding: 0.9rem 1rem;
+    padding: 1rem;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-end; /* 关键：文字靠下对齐 */
 }
 
-/* 标题缩小 */
+/* 产品名称（在上） */
 .product-card-title {
     font-size: 1.05rem;
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 0.5rem;
+    line-height: 1.3;
 }
 
-/* 系列/分类缩小 */
+/* 系列/分类（在下） */
 .product-card-brand {
     font-size: 0.82rem;
     color: var(--text-secondary);
-    margin-bottom: 0.8rem;
     font-weight: 500;
-}
-
-/* 规格预览区缩小 */
-.product-specs-preview {
-    margin-top: auto;
-    padding-top: 0.8rem;
-    border-top: 1px solid var(--divider);
-}
-
-.product-specs-preview ul {
-    font-size: 0.82rem;
-    list-style: none;
-    padding: 0;
     margin: 0;
-}
-
-.product-specs-preview li {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.35rem 0;
-    border-bottom: 1px dotted var(--divider);
-    color: var(--text-secondary);
-}
-
-.product-specs-preview li:last-child {
-    border-bottom: none;
-}
-
-.product-specs-preview li strong {
-    color: var(--text-primary);
-    font-weight: 600;
-    min-width: 85px;
 }
 
 /* hover 时标题强调 */
@@ -367,13 +349,13 @@ footer a:hover {
     transform: translateY(0);
 }
 
-/* 精选系列优化 */
+/* 精选系列优化（如果需要更大图片） */
 .featured-section .product-grid {
     gap: 60px 40px;
     margin-top: 80px;
 }
 
-.featured-section .product-card-img {
+.featured-section .product-card-img-wrapper {
     height: 260px;
 }
 
@@ -384,7 +366,7 @@ footer a:hover {
         gap: 40px 30px;
     }
     
-    .product-card-img {
+    .product-card-img-wrapper {
         height: 185px;
     }
 }
@@ -399,7 +381,7 @@ footer a:hover {
         gap: 40px;
     }
     
-    .product-card-img {
+    .product-card-img-wrapper {
         height: 170px;
     }
     
@@ -413,5 +395,3 @@ img {
     max-width: 100%; 
     height: auto; 
 }
-
-

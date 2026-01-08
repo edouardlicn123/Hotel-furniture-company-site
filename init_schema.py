@@ -1,4 +1,8 @@
+# init_schema.py
+
 import os
+import random
+import string
 from app import create_app, db
 from app.models import User, Settings, Category, Product
 from werkzeug.security import generate_password_hash
@@ -19,33 +23,29 @@ with app.app_context():
         )
         db.session.add(admin_user)
 
-    # 默认网站设置 + SEO 配置
+    # 默认网站设置 + SEO 配置（保持不变）
     if Settings.query.count() == 0:
         default_settings = Settings(
             company_name='XX Hotel Furniture Manufacturer',
-            theme='light',
+            theme='default',  # 确保与 themes/default.css 匹配
 
-            # Homepage SEO
             seo_home_title='Home - Premium Hotel Furniture | {company_name}',
             seo_home_description='Professional hotel furniture manufacturer specializing in luxury beds, sofas, wardrobes and custom solutions for 5-star hotels worldwide.',
             seo_home_keywords='hotel furniture, luxury hotel beds, hotel sofas, custom hospitality furniture, hotel room furniture',
 
-            # Products Page SEO
             seo_products_title='Hotel Furniture Products | Beds, Sofas, Wardrobes - {company_name}',
             seo_products_description='Explore our complete collection of premium hotel furniture including beds, nightstands, sofas, wardrobes and custom case goods for luxury hospitality projects.',
             seo_products_keywords='hotel furniture products, hotel beds, hotel sofas, hotel wardrobes, luxury hotel furniture collection',
 
-            # About Page SEO
             seo_about_title='About Us - {company_name} | Leading Hotel Furniture Manufacturer',
             seo_about_description='Learn about {company_name}, a professional hotel furniture manufacturer with years of experience in custom hospitality furniture design and production.',
 
-            # Contact Page SEO
             seo_contact_title='Contact Us - {company_name} | Hotel Furniture Inquiry',
             seo_contact_description='Contact {company_name} for custom hotel furniture solutions, quotes, and partnership opportunities.'
         )
         db.session.add(default_settings)
 
-    # 酒店家具英文分类（Loose + Fixed）
+    # 酒店家具英文分类（保持完整）
     if Category.query.count() == 0:
         loose_cats = [
             "Beds",
@@ -77,70 +77,119 @@ with app.app_context():
         for cat_name in all_cats:
             db.session.add(Category(name=cat_name))
 
-        # 示例产品（包含座高、基材、覆面、适用空间、精选系列）
-        prod1 = Product(
-            name="King Size Hotel Bed",
-            description="Luxury 5-star hotel standard bed with premium support",
-            image="bed_king.jpg",
-            length=2000, width=1800, height=800,
-            seat_height=None,
-            base_material="Solid Wood",
-            surface_material="Fabric",
-            featured_series="Modern Hotel Series,Luxury Classic Series",
-            applicable_space="Guest Room, Suite",
-            category=Category.query.filter_by(name="Beds").first()
-        )
-        prod2 = Product(
-            name="Built-in Wardrobe with Sliding Doors",
-            description="Large capacity storage with full-length mirror",
-            image="wardrobe_builtin.jpg",
-            length=2400, width=600, height=2400,
-            seat_height=None,
-            base_material="Engineered Wood",
-            surface_material="Lacquer Finish",
-            featured_series="Modern Hotel Series",
-            applicable_space="Guest Room",
-            category=Category.query.filter_by(name="Wardrobes/Closets/Armoires").first()
-        )
-        prod3 = Product(
-            name="Hotel Writing Desk",
-            description="Multi-functional desk with drawers",
-            image="desk_hotel.jpg",
-            length=1200, width=600, height=750,
-            seat_height=None,
-            base_material="Solid Wood",
-            surface_material="Lacquer Finish",
-            featured_series="Modern Hotel Series",
-            applicable_space="Guest Room",
-            category=Category.query.filter_by(name="Built-in Desks/Writing Tables").first()
-        )
-        prod4 = Product(
-            name="Three-Seater Fabric Sofa",
-            description="Comfortable and durable for hotel lobby",
-            image="sofa_fabric.jpg",
-            length=2200, width=900, height=850,
-            seat_height=450,
-            base_material="Metal + Solid Wood",
-            surface_material="Fabric",
-            featured_series="Luxury Classic Series",
-            applicable_space="Lobby, Lounge",
-            category=Category.query.filter_by(name="Sofas and Armchairs").first()
-        )
-        prod5 = Product(
-            name="TV Cabinet with Minibar",
-            description="Integrated minibar and storage",
-            image="tv_cabinet.jpg",
-            length=1800, width=450, height=600,
-            seat_height=None,
-            base_material="Engineered Wood",
-            surface_material="Lacquer Finish",
-            featured_series="Modern Hotel Series",
-            applicable_space="Guest Room",
-            category=Category.query.filter_by(name="TV Cabinets/Entertainment Units").first()
-        )
+    # ==================== 注入你指定的5条真实预产品数据 ====================
+    if Product.query.count() == 0:
+        products_data = [
+            {
+                "product_code": "pc897421976",
+                "name": "Bed",
+                "description": "Bed for rooms",
+                "image": "product1.png",
+                "photos": "product1.png",
+                "length": None,
+                "width": None,
+                "height": None,
+                "seat_height": None,
+                "base_material": "wood",
+                "surface_material": "cloth",
+                "featured_series": "basic1",
+                "applicable_space": "room",
+                "category_name": "Beds"
+            },
+            {
+                "product_code": "pc678534762",
+                "name": "Bed",
+                "description": "Bed for rooms",
+                "image": "product2.png",
+                "photos": "product2.png",
+                "length": None,
+                "width": None,
+                "height": None,
+                "seat_height": None,
+                "base_material": "wood",
+                "surface_material": "cloth",
+                "featured_series": "basic2",
+                "applicable_space": "room",
+                "category_name": "Beds"
+            },
+            {
+                "product_code": "pc453589563",
+                "name": "nightstand",
+                "description": "",
+                "image": "product3.png",
+                "photos": "product3.png",
+                "length": 550,
+                "width": 400,
+                "height": 600,
+                "seat_height": None,
+                "base_material": "wood",
+                "surface_material": "wood",
+                "featured_series": "basic1",
+                "applicable_space": "room",
+                "category_name": "Nightstands/Bedside Tables"
+            },
+            {
+                "product_code": "pc416738421",
+                "name": "luggage rack",
+                "description": "",
+                "image": "product4.png",
+                "photos": "product4.png",
+                "length": 1200,
+                "width": 400,
+                "height": 450,
+                "seat_height": None,
+                "base_material": "metal and foam",
+                "surface_material": "cloth",
+                "featured_series": "",
+                "applicable_space": "room",
+                "category_name": "Luggage Racks/Benches"
+            },
+            {
+                "product_code": "pc412456345",
+                "name": "coffee table",
+                "description": "",
+                "image": "product5.png",
+                "photos": "product5.png",
+                "length": 800,
+                "width": 800,
+                "height": 450,
+                "seat_height": None,
+                "base_material": "wood",
+                "surface_material": "",
+                "featured_series": "",
+                "applicable_space": "lounge",
+                "category_name": "Coffee Tables/Tea Tables"
+            }
+        ]
 
-        db.session.add_all([prod1, prod2, prod3, prod4, prod5])
+        for data in products_data:
+            category = Category.query.filter_by(name=data["category_name"]).first()
+            if not category:
+                # 如果分类不存在（理论上不会），创建它
+                category = Category(name=data["category_name"])
+                db.session.add(category)
+                db.session.flush()
+
+            product = Product(
+                product_code=data["product_code"],
+                name=data["name"],
+                description=data["description"] or None,
+                image=data["image"],
+                photos=data["photos"],
+                length=data["length"],
+                width=data["width"],
+                height=data["height"],
+                seat_height=data["seat_height"],
+                base_material=data["base_material"] or None,
+                surface_material=data["surface_material"] or None,
+                featured_series=data["featured_series"] or None,
+                applicable_space=data["applicable_space"] or None,
+                category_id=category.id
+            )
+            db.session.add(product)
 
     db.session.commit()
-    print("Database initialization complete! English hotel furniture theme with SEO settings applied.")
+    print("Database initialization complete!")
     print("Admin account: admin / admin123")
+    print("5 real products with specified codes and images have been injected.")
+    print("Theme set to 'default' for correct CSS loading.")
